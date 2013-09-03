@@ -29,14 +29,14 @@ of Catkin workspaces. One workspace is an "isolated" workspace, and the other is
 a "normal" workspace.
 
 First, clear your catkin environment:
-```shell
+```bash
 unset CATKIN_PREFIX_PATH
 source /opt/ros/$ROS_DISTRO/setup.sh
 ```
 
 Then, checkout the Eigen-3-based version of catkin to an "isolated" workspace
 and build it:
-```shell
+```bash
 mkdir -p ~/ws/underlay_isolated/src
 cd ~/ws/underlay_isolated
 git clone git@github.com:jhu-lcsr-forks/barrett.git src/barrett
@@ -45,7 +45,7 @@ source install/setup.bash
 ```
 
 Then in the same shell, create a "normal" workspace for these packages and yours:
-```shell
+```bash
 mkdir -p ~/ws/underlay
 git clone git@github.com:jhu-lcsr/rtt_barrett.git src/rtt_barrett
 catkin_make
