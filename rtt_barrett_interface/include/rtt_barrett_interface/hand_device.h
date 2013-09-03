@@ -12,4 +12,3 @@ namespace rtt_barrett_interface {
 }
 
 #endif // ifndef __RTT_BARRETT_INTERFACE_HAND_DEVICE_H
-

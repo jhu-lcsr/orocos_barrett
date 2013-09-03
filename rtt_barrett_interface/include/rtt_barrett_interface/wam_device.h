@@ -1,39 +1,46 @@
 #ifndef __RTT_BARRETT_INTERFACE_WAM_DEVICE_H
 #define __RTT_BARRETT_INTERFACE_WAM_DEVICE_H
 
+#include <string>
+#include <vector>
+
+#include <rtt/RTT.hpp>
+#include <rtt/Logger.hpp>
+
+#include <urdf/model.h>
+
 namespace rtt_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.
    */
-  struct WamDeviceBase 
+  class WamDeviceBase 
   {
-    //! RTT Service for WAM interfaces
-    RTT::Service::shared_ptr parent_service_;
-
+  public:
     //! Zero all the joint-space values
     virtual void setZero() = 0;
     //! Read the configuration and publish it
     virtual void readConfig() = 0;
     //! Read the hardware state and publish it
-    virtual void readHW(double time, double period) = 0;
+    virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
-    virtual void writeHW(double time, double period) = 0;
+    virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the calibration command 
-    virtual void writeHWCalibration(double time, double period) = 0;
+    virtual void writeHWCalibration(RTT::Seconds time, RTT::Seconds period) = 0;
   };
 
   //! Class for real and simulated 4- or 7-DOF WAMs
   template<size_t DOF>
-    struct WamDevice : public WamDeviceBase 
+    class WamDevice : public WamDeviceBase 
   {
+  public:
     /** \brief Add all input and output ports to the "wam" service of the given parent
      * service.
      */
     WamDevice(
         RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
-        const std::string &tip_joint) :
-      parent_serivce_(parent_service)
+        const std::string &tip_joint_name) :
+      parent_service_(parent_service)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
 
@@ -55,7 +62,7 @@ namespace rtt_barrett_interface {
       joint_names.resize(DOF);
 
       // Get URDF links starting at product tip link
-      boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint);
+      boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint_name);
 
       // Get joint information starting at the tip
       for(size_t i=DOF-1; i>=0; i--) 
@@ -83,7 +90,8 @@ namespace rtt_barrett_interface {
     }
 
     //! Removes the added "wam" service 
-    virtual ~WamDevice() {
+    virtual ~WamDevice() 
+    {
       parent_service_->removeService("wam");
     }
 
@@ -104,6 +112,10 @@ namespace rtt_barrett_interface {
       joint_velocity_limits_out.write(joint_velocity_limits);
       joint_names_out.write(joint_names);
     }
+
+  protected:
+    //! RTT Service for WAM interfaces
+    RTT::Service::shared_ptr parent_service_;
 
     // Configuration
     std::vector<std::string> 
@@ -156,3 +168,5 @@ namespace rtt_barrett_interface {
     //\}
   };
 }
+
+#endif // ifndef __RTT_BARRETT_INTERFACE_WAM_DEVICE_H

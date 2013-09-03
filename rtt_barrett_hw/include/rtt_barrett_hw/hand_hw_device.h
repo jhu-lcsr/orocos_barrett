@@ -3,6 +3,8 @@
 
 #include <barrett/systems.h>
 
+#include <rtt_barrett_interface/hand_device.h>
+
 namespace rtt_barrett_hw {
   // State structure for a Hand
   struct HandHWDevice 

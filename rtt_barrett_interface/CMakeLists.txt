@@ -3,12 +3,7 @@ project(rtt_barrett_interface)
 
 find_package(catkin REQUIRED)
 
-find_package(OROCOS-RTT REQUIRED ...)
-include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
-
 find_package(barrett)
-
-include_directories(${BARRETT_INCLUDE_DIRS})
 
 catkin_package(
   INCLUDE_DIRS include

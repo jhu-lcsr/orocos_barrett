@@ -3,6 +3,9 @@
 
 #include <rtt/TaskContext.hpp>
 
+#include <urdf/model.h>
+
+
 namespace rtt_barrett_interface {
 
   class BarrettManager : public RTT::TaskContext {
@@ -13,7 +16,7 @@ namespace rtt_barrett_interface {
      * This will create RTT properties and operations for populating this
      * manager with real or simulated hardware interfaces.
      */
-    BarrettManager(const std::string name);
+    BarrettManager(const std::string &name);
 
     //! Configure a 7-DOF WAM
     virtual bool configureWam7(
@@ -32,14 +35,15 @@ namespace rtt_barrett_interface {
 
     //! URDF with kinematics/dynamics information for all products on this bus
     urdf::Model urdf_model_;
+    std::string urdf_str_;
   };
 
   BarrettManager::BarrettManager(const std::string &name) :
     RTT::TaskContext(name),
-    urdf_model_(""),
+    urdf_str_("")
   {
     // Properties of of the manager
-    this->addProperty("robot_description",urdf_model_)
+    this->addProperty("robot_description",urdf_str_)
       .doc("The URDF for all devices on barrett manager.");
 
     // Configuration operations

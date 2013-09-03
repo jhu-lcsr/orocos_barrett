@@ -21,3 +21,39 @@ by a single libbarrett `barrett::ProductManager` and is used in
 [**rtt\_barrett\_gazebo**](rtt_barrett_gazebo) for talking to the real hardware
 and simulated hardware, respectively. See each package for more information
 about its contents.
+
+## Building
+
+Building the rtt\_barrett packages from source is most easily done with a pair
+of Catkin workspaces. One workspace is an "isolated" workspace, and the other is
+a "normal" workspace.
+
+First, clear your catkin environment:
+```shell
+unset CATKIN_PREFIX_PATH
+source /opt/ros/$ROS_DISTRO/setup.sh
+```
+
+Then, checkout the Eigen-3-based version of catkin to an "isolated" workspace
+and build it:
+```shell
+mkdir -p ~/ws/underlay_isolated/src
+cd ~/ws/underlay_isolated
+git clone git@github.com:jhu-lcsr-forks/barrett.git src/barrett
+catkin_make_isolated --install
+source install/setup.bash
+```
+
+Then in the same shell, create a "normal" workspace for these packages and yours:
+```shell
+mkdir -p ~/ws/underlay
+git clone git@github.com:jhu-lcsr/rtt_barrett.git src/rtt_barrett
+catkin_make
+source devel/setup.sh
+```
+
+Now you can move on to trying the examples.
+
+## Examples
+
+
