@@ -30,7 +30,7 @@ a "normal" workspace.
 
 First, clear your catkin environment:
 ```bash
-unset CATKIN_PREFIX_PATH
+unset CMAKE_PREFIX_PATH
 source /opt/ros/$ROS_DISTRO/setup.sh
 ```
 
