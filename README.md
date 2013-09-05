@@ -41,7 +41,7 @@ mkdir -p ~/ws/underlay_isolated/src
 cd ~/ws/underlay_isolated
 git clone git@github.com:jhu-lcsr-forks/barrett.git src/barrett
 catkin_make_isolated --install
-source install/setup.bash
+source install_isolated/setup.bash
 ```
 
 Then in the same shell, create a "normal" workspace for these packages and yours:
