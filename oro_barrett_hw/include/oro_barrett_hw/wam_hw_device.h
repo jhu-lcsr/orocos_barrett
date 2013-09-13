@@ -89,6 +89,7 @@ namespace oro_barrett_hw {
       }
 
       // Store position
+      // TODO: add internal calibration offsets
       this->joint_position = raw_joint_position;
 
       // Read resolver angles
@@ -103,14 +104,27 @@ namespace oro_barrett_hw {
       this->joint_resolver_position_out.write(this->joint_resolver_position);
     }
 
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period, bool force)
+    virtual void writeHW(RTT::Seconds time, RTT::Seconds period)
     {
-      // Read newest command from data ports 
-      if(this->joint_effort_in.connected() && this->joint_effort_in.readNewest(this->joint_effort) != RTT::NewData) {
-        return;
+      static int warning_throttle = 0;
+
+      // Check if the effort command port is connected
+      if(this->joint_effort_in.connected()) {
+        // Read newest command from data ports 
+        if(this->joint_effort_in.readNewest(this->joint_effort) != RTT::NewData) {
+          return;
+        }
+      } else {
+        // Not connected, zero the command
+        this->joint_effort.setZero();
       }
 
-      static int warning_throttle = 0;
+      // Make sure the device is active
+      if(interface->getSafetyModule()->getMode(true) != barrett::SafetyModule::ACTIVE) { 
+        // If it's not active, set the effort command to zero
+        // TODO: When it changes, prevent command jumps
+        this->joint_effort.setZero();
+      }
 
       for(size_t i=0; i<DOF; i++) {
         // Check if the joint effort st

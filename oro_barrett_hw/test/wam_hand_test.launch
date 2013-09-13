@@ -13,3 +13,4 @@
   <param name="robot_description" command="$(find xacro)/xacro.py '$(find barrett_model)/robots/wam_7dof_wam.urdf.xacro'" />
 
 </launch>
+

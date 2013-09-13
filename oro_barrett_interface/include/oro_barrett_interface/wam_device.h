@@ -23,7 +23,7 @@ namespace oro_barrett_interface {
     //! Read the hardware state and publish it
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period, bool force=false) = 0;
+    virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the calibration command 
     virtual void writeHWCalibration(RTT::Seconds time, RTT::Seconds period) = 0;
   };
@@ -39,7 +39,7 @@ namespace oro_barrett_interface {
     WamDevice(
         RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
-        const std::string &tip_joint_name) :
+        const std::string &urdf_prefix) :
       parent_service_(parent_service)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
@@ -62,6 +62,7 @@ namespace oro_barrett_interface {
       joint_names.resize(DOF);
 
       // Get URDF links starting at product tip link
+      const std::string tip_joint_name = urdf_prefix+"/palm_yaw_joint"; 
       boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint_name);
 
       // Get joint information starting at the tip (this way we're robust to

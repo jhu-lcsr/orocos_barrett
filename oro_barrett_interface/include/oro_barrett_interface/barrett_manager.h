@@ -20,16 +20,15 @@ namespace oro_barrett_interface {
 
     //! Configure a 7-DOF WAM
     virtual bool configureWam7(
-        const std::string &tip_joint) = 0;
+        const std::string &urdf_prefix) = 0;
 
     //! Configure a 4-DOF WAM
     virtual bool configureWam4(
-        const std::string &tip_joint) = 0;
+        const std::string &urdf_prefix) = 0;
 
     //! Configure a Barrett Hand
     virtual bool configureHand(
-        const bool torque_sensors,
-        const std::string &palm_link) = 0;
+        const std::string &urdf_prefix) = 0;
 
   protected:
 
@@ -49,15 +48,15 @@ namespace oro_barrett_interface {
     // Configuration operations
     this->addOperation("configureWam4",&BarrettManager::configureWam4, this)
       .doc("Configure a 4-DOF WAM Robot.")
-      .arg("tip_joint", "The name of the tip joint in the URDF corresponding to the end of the robot.");
+      .arg("urdf_prefix", "The joint name prefix in the URDF corresponding to the desired WAM robot.");
 
     this->addOperation("configureWam7",&BarrettManager::configureWam7, this)
       .doc("Configure a 7-DOF WAM Robot.")
-      .arg("tip_joint", "The name of the tip joint in the URDF corresponding to the end of the robot.");
+      .arg("urdf_prefix", "The joint name prefix in the URDF corresponding to the desired WAM robot.");
 
     this->addOperation("configureHand",&BarrettManager::configureHand, this)
       .arg("torque_sensors","Whether or not the hand as knuckle joint torque sensors [true,false]")
-      .arg("palm_link", "The name of the link in the URDF corresponding to the base of the hand.");
+      .arg("urdf_prefix", "The joint name prefix in the URDF corresponding to the desired BHand.");
   }
 }
 
