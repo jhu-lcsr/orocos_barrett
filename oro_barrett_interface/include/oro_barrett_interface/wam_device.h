@@ -23,7 +23,7 @@ namespace oro_barrett_interface {
     //! Read the hardware state and publish it
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
+    virtual void writeHW(RTT::Seconds time, RTT::Seconds period, bool force=false) = 0;
     //! Write the calibration command 
     virtual void writeHWCalibration(RTT::Seconds time, RTT::Seconds period) = 0;
   };
@@ -64,9 +64,11 @@ namespace oro_barrett_interface {
       // Get URDF links starting at product tip link
       boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint_name);
 
-      // Get joint information starting at the tip
-      for(size_t i=DOF-1; i>=0; i--) 
+      // Get joint information starting at the tip (this way we're robust to
+      // branching in the kinematic tree)
+      for(size_t i=0; i<DOF; i++) 
       {
+        unsigned jid = DOF-i-1;
         // While the joint has been handled or the joint type isn't revolute
         while(std::find(joint_names.begin(), joint_names.end(), joint->name) != joint_names.end() 
             || joint->type != urdf::Joint::REVOLUTE)
@@ -76,16 +78,18 @@ namespace oro_barrett_interface {
           // Make sure we didn't run out of links
           if(!joint.get()) {
             std::ostringstream oss;
-            oss << "Ran out of joints while parsing URDF starting at joint: \""
-              << tip_joint_name << "\"";
+            RTT::log(RTT::Error) << "Ran out of joints while parsing URDF starting at joint: \""
+              << tip_joint_name << "\"" << RTT::endlog();
             throw std::runtime_error(oss.str());
           }
         }
 
+        RTT::log(RTT::Debug) << "Got joint "<<jid<<": \"" << joint->name << "\"" << RTT::endlog();
+
         // Store the joint properties
-        joint_names[i] = joint->name;
-        joint_effort_limits(i) = joint->limits->effort;
-        joint_velocity_limits(i) = joint->limits->velocity;
+        joint_names[jid] = joint->name;
+        joint_effort_limits(jid) = joint->limits->effort;
+        joint_velocity_limits(jid) = joint->limits->velocity;
       }
     }
 

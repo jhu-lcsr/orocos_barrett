@@ -1,0 +1,14 @@
+
+import("rtt_ros");
+ros.import("oro_barrett_hw");
+
+loadComponent("barrett_hw_manager","oro_barrett_hw::BarrettHWManager");
+setActivity("barrett_hw_manager",0.003,HighestPriority,ORO_SCHED_RT)
+loadService("barrett_hw_manager","rosparam");
+
+barrett_hw_manager.rosparam.getAll();
+barrett_hw_manager.rosparam.getAbsolute("robot_description");
+
+barrett_hw_manager.configure();
+barrett_hw_manager.configureWam7("wam/palm_yaw_joint");
+barrett_hw_manager.start();

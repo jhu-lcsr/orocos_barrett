@@ -15,7 +15,14 @@
   <build_depend>urdf</build_depend>
   <build_depend>barrett</build_depend>
   <build_depend>oro_barrett_interface</build_depend>
+  <build_depend>ocl-deployment</build_depend>
   <run_depend>urdf</run_depend>
   <run_depend>barrett</run_depend>
   <run_depend>oro_barrett_interface</run_depend>
+
+  <export>
+    <rtt_ros>
+      <plugin_depend>rtt_rosparam</plugin_depend>
+    </rtt_ros>
+  </export>
 </package>

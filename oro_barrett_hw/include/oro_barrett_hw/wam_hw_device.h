@@ -33,8 +33,11 @@ namespace oro_barrett_hw {
           urdf_model, 
           tip_joint_name)
     {
+      // Wait for the wam
+      barrett_manager->waitForWam(false);
+
       // Get the wam pucks
-      std::vector<barrett::Puck*> wam_pucks = barrett_manager->getWamPucks();
+      wam_pucks = barrett_manager->getWamPucks();
       wam_pucks.resize(DOF);
 
       // Construct a low-level wam
@@ -100,10 +103,10 @@ namespace oro_barrett_hw {
       this->joint_resolver_position_out.write(this->joint_resolver_position);
     }
 
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period)
+    virtual void writeHW(RTT::Seconds time, RTT::Seconds period, bool force)
     {
       // Read newest command from data ports 
-      if(this->joint_effort_in.readNewest(this->joint_effort) != RTT::NewData) {
+      if(this->joint_effort_in.connected() && this->joint_effort_in.readNewest(this->joint_effort) != RTT::NewData) {
         return;
       }
 
@@ -185,6 +188,7 @@ namespace oro_barrett_hw {
   protected:
     //! libbarrett Interface
     boost::shared_ptr<barrett::LowLevelWam<DOF> > interface;
+    std::vector<barrett::Puck*> wam_pucks;
   };
 
 }

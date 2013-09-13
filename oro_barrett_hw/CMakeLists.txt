@@ -39,4 +39,11 @@ target_link_libraries(barrett_hw_manager
   ${urdf_LIBRARIES}
   ${BARRETT_LIBRARIES})
 
+if(CATKIN_ENABLE_TESTING)
+  orocos_use_package(ocl-deployment)
+  orocos_use_package(ocl-taskbrowser)
+  orocos_executable(idle_test
+    test/idle_test.cpp)
+endif()
+
 orocos_generate_package()

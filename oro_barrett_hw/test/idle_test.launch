@@ -1,0 +1,10 @@
+<launch>
+  <include file="$(find rtt_ros)/launch/deployer.launch">
+    <arg name="DEPLOYER_ARGS" value="-s $(find oro_barrett_hw)/test/idle_test.ops"/>
+    <arg name="LOG_LEVEL" value="debug"/>
+    <arg name="DEBUG" value="false"/>
+  </include>
+
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find barrett_model)/robots/wam_7dof_wam.urdf.xacro'" />
+
+</launch>
