@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>rtt_barrett_interface</name>
+  <name>oro_barrett_interface</name>
   <version>0.0.0</version>
-  <description>The rtt_barrett_interface package</description>
+  <description>The oro_barrett_interface package</description>
 
   <maintainer email="jbo@jhu.edu">Jonathan Bohren</maintainer>
 

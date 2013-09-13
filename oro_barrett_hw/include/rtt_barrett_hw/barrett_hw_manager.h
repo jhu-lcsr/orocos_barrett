@@ -1,5 +1,5 @@
-#ifndef __RTT_BARRETT_HW_BARRETT_HW_MANAGER
-#define __RTT_BARRETT_HW_BARRETT_HW_MANAGER
+#ifndef __ORO_BARRETT_HW_BARRETT_HW_MANAGER
+#define __ORO_BARRETT_HW_BARRETT_HW_MANAGER
 
 #include <rtt/RTT.hpp>
 #include <rtt/Logger.hpp>
@@ -17,14 +17,14 @@
 
 #include <urdf/model.h>
 
-#include <rtt_barrett_interface/barrett_manager.h>
+#include <oro_barrett_interface/barrett_manager.h>
 
-#include <rtt_barrett_hw/wam_hw_device.h>
-#include <rtt_barrett_hw/hand_hw_device.h>
+#include <oro_barrett_hw/wam_hw_device.h>
+#include <oro_barrett_hw/hand_hw_device.h>
 
-namespace rtt_barrett_hw {
+namespace oro_barrett_hw {
 
-  class BarrettHWManager : public rtt_barrett_interface::BarrettManager 
+  class BarrettHWManager : public oro_barrett_interface::BarrettManager 
   {
   public:
 
@@ -96,9 +96,9 @@ namespace rtt_barrett_hw {
     //! \name Possible barrett products
     //\{
     //! WAM robot container
-    boost::shared_ptr<rtt_barrett_interface::WamDeviceBase> wam_device_;
+    boost::shared_ptr<oro_barrett_interface::WamDeviceBase> wam_device_;
     //! Barrett hand container
-    boost::shared_ptr<rtt_barrett_interface::HandDevice> hand_device_;
+    boost::shared_ptr<oro_barrett_interface::HandDevice> hand_device_;
     //\}
 
     RTT::Seconds last_update_time_;
@@ -149,7 +149,7 @@ namespace rtt_barrett_hw {
   };
 
   BarrettHWManager::BarrettHWManager(const std::string &name) :
-    rtt_barrett_interface::BarrettManager(name),
+    oro_barrett_interface::BarrettManager(name),
     bus_id_(0),
     config_path_("")
   {
@@ -274,7 +274,7 @@ namespace rtt_barrett_hw {
   template<size_t DOF>
     bool BarrettHWManager::configureWam(const std::string &tip_joint_name)
     {
-      using namespace rtt_barrett_interface;
+      using namespace oro_barrett_interface;
 
       try{
 
@@ -319,4 +319,4 @@ namespace rtt_barrett_hw {
 
 }
 
-#endif // ifndef __RTT_BARRETT_HW_BARRETT_HW
+#endif // ifndef __ORO_BARRETT_HW_BARRETT_HW

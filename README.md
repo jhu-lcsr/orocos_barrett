@@ -1,5 +1,5 @@
-RTT Barret Interface
-====================
+Orocos Barret Interface
+=======================
 
 This repository contains Orocos/RTT components for interfacing with Barret WAM
 and BHand hardware supported by libbarrett.
@@ -14,11 +14,11 @@ libbarrett's "low-level" interface. These interfaces include
 `barrett::LowLevelWam` and `barrett:Hand`, which each provide direct access to
 joint-level torque, position, and velocity information.
 
-The package [**rtt\_barrett\_interface**](rtt_barrett_interface) includes an
+The package [**oro\_barrett\_interface**](oro_barrett_interface) includes an
 Orocos component which is represents the set of devices that can be represented
 by a single libbarrett `barrett::ProductManager` and is used in
-[**rtt\_barrett\_hw**](rtt_barrett_hw) and
-[**rtt\_barrett\_gazebo**](rtt_barrett_gazebo) for talking to the real hardware
+[**oro\_barrett\_hw**](oro_barrett_hw) and
+[**oro\_barrett\_gazebo**](oro_barrett_gazebo) for talking to the real hardware
 and simulated hardware, respectively. See each package for more information
 about its contents.
 
@@ -47,7 +47,7 @@ source install_isolated/setup.bash
 Then in the same shell, create a "normal" workspace for these packages and yours:
 ```bash
 mkdir -p ~/ws/underlay
-git clone git@github.com:jhu-lcsr/rtt_barrett.git src/rtt_barrett
+git clone git@github.com:jhu-lcsr/orocos_barrett.git src/orocos_barrett
 catkin_make
 source devel/setup.sh
 ```

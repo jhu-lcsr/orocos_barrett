@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rtt_barrett_gazebo)
+project(oro_barrett_gazebo)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -50,7 +50,7 @@ find_package(catkin REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES rtt_barrett_gazebo
+#  LIBRARIES oro_barrett_gazebo
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -64,19 +64,19 @@ catkin_package(
 # include_directories(include)
 
 ## Declare a cpp library
-# add_library(rtt_barrett_gazebo
-#   src/${PROJECT_NAME}/rtt_barrett_gazebo.cpp
+# add_library(oro_barrett_gazebo
+#   src/${PROJECT_NAME}/oro_barrett_gazebo.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(rtt_barrett_gazebo_node src/rtt_barrett_gazebo_node.cpp)
+# add_executable(oro_barrett_gazebo_node src/oro_barrett_gazebo_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(rtt_barrett_gazebo_node rtt_barrett_gazebo_generate_messages_cpp)
+# add_dependencies(oro_barrett_gazebo_node oro_barrett_gazebo_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(rtt_barrett_gazebo_node
+# target_link_libraries(oro_barrett_gazebo_node
 #   ${catkin_LIBRARIES}
 # )
 
@@ -95,7 +95,7 @@ catkin_package(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS rtt_barrett_gazebo rtt_barrett_gazebo_node
+# install(TARGETS oro_barrett_gazebo oro_barrett_gazebo_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -120,7 +120,7 @@ catkin_package(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_rtt_barrett_gazebo.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_oro_barrett_gazebo.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

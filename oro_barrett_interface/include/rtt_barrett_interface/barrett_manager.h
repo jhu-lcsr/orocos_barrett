@@ -1,12 +1,12 @@
-#ifndef __RTT_BARRETT_INTERFACE_BARRETT_MANAGER_H
-#define __RTT_BARRETT_INTERFACE_BARRETT_MANAGER_H
+#ifndef __ORO_BARRETT_INTERFACE_BARRETT_MANAGER_H
+#define __ORO_BARRETT_INTERFACE_BARRETT_MANAGER_H
 
 #include <rtt/TaskContext.hpp>
 
 #include <urdf/model.h>
 
 
-namespace rtt_barrett_interface {
+namespace oro_barrett_interface {
 
   class BarrettManager : public RTT::TaskContext {
 
@@ -61,5 +61,5 @@ namespace rtt_barrett_interface {
   }
 }
 
-#endif // ifndef __RTT_BARRETT_INTERFACE_BARRETT_MANAGER_H
+#endif // ifndef __ORO_BARRETT_INTERFACE_BARRETT_MANAGER_H
 

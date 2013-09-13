@@ -1,22 +1,22 @@
-#ifndef __RTT_BARRETT_HW_WAM_HW_DEVICE
-#define __RTT_BARRETT_HW_WAM_HW_DEVICE
+#ifndef __ORO_BARRETT_HW_WAM_HW_DEVICE
+#define __ORO_BARRETT_HW_WAM_HW_DEVICE
 
 #include <rtt/RTT.hpp>
 #include <rtt/Logger.hpp>
 
 #include <barrett/systems.h>
 
-#include <rtt_barrett_interface/wam_device.h>
+#include <oro_barrett_interface/wam_device.h>
 
 #include <control_toolbox/filters.h>
 
-namespace rtt_barrett_hw {
+namespace oro_barrett_hw {
 
   /** \brief State structure for a real WAM device
    *
    */
   template<size_t DOF>
-    class WamHWDevice : public rtt_barrett_interface::WamDevice<DOF>
+    class WamHWDevice : public oro_barrett_interface::WamDevice<DOF>
   {
   public:
     /** \brief Construct a low-level WAM interface and extract joint information from
@@ -28,7 +28,7 @@ namespace rtt_barrett_hw {
         const std::string &tip_joint_name,
         boost::shared_ptr<barrett::ProductManager> barrett_manager,
         const libconfig::Setting &wam_config) :
-      rtt_barrett_interface::WamDevice<DOF>(
+      oro_barrett_interface::WamDevice<DOF>(
           parent_service, 
           urdf_model, 
           tip_joint_name)
@@ -189,4 +189,4 @@ namespace rtt_barrett_hw {
 
 }
 
-#endif // ifndef __RTT_BARRETT_HW_WAM_DEVICE
+#endif // ifndef __ORO_BARRETT_HW_WAM_DEVICE

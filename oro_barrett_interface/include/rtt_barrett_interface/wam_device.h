@@ -1,5 +1,5 @@
-#ifndef __RTT_BARRETT_INTERFACE_WAM_DEVICE_H
-#define __RTT_BARRETT_INTERFACE_WAM_DEVICE_H
+#ifndef __ORO_BARRETT_INTERFACE_WAM_DEVICE_H
+#define __ORO_BARRETT_INTERFACE_WAM_DEVICE_H
 
 #include <string>
 #include <vector>
@@ -9,7 +9,7 @@
 
 #include <urdf/model.h>
 
-namespace rtt_barrett_interface {
+namespace oro_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.
    */
@@ -169,4 +169,4 @@ namespace rtt_barrett_interface {
   };
 }
 
-#endif // ifndef __RTT_BARRETT_INTERFACE_WAM_DEVICE_H
+#endif // ifndef __ORO_BARRETT_INTERFACE_WAM_DEVICE_H

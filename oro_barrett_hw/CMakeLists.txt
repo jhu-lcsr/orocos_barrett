@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rtt_barrett_hw)
+project(oro_barrett_hw)
 
 find_package(catkin REQUIRED 
   cmake_modules 
-  rtt_barrett_interface
+  oro_barrett_interface
   control_toolbox 
   urdf
   )
 
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES rtt_barrett_hw
+#  LIBRARIES oro_barrett_hw
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
