@@ -12,6 +12,10 @@ namespace oro_barrett_interface {
 
   class HandDevice {
   public:
+    //! Initialize the hand (get pose and hold open)
+    virtual void initialize() = 0;
+    //! Idle the hand (open it up and disable the motors)
+    virtual void idle() = 0;
     //! Read the hardware state and publish it
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
@@ -39,7 +43,7 @@ namespace oro_barrett_interface {
       joint_actuation;
 
     // Joint state for active and passive joints
-    Eigen::Vector4d 
+    Eigen::Matrix<double,8,1>
       joint_position,
       joint_position_cmd,
       joint_velocity_cmd,
@@ -73,18 +77,33 @@ namespace oro_barrett_interface {
     parent_service_(parent_service)
   {
     RTT::Service::shared_ptr wam_service = parent_service->provides("hand");
+    wam_service->doc("Barrett Hand interface.");
 
     using namespace boost::assign;
     joint_names.clear();
     joint_names += 
+      urdf_prefix+"/finger_1/prox_joint",
+      urdf_prefix+"/finger_2/prox_joint",
       urdf_prefix+"/finger_1/med_joint",
       urdf_prefix+"/finger_2/med_joint",
       urdf_prefix+"/finger_3/med_joint",
-      urdf_prefix+"/finger_1/prox_joint",
       urdf_prefix+"/finger_1/dist_joint",
       urdf_prefix+"/finger_2/dist_joint",
       urdf_prefix+"/finger_3/dist_joint";
 
+    for(std::vector<std::string>::iterator joint_name_it = joint_names.begin();
+        joint_name_it != joint_names.end();
+        ++joint_name_it)
+    {
+      boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(*joint_name_it);
+
+      if(!joint) {
+        std::ostringstream oss;
+        RTT::log(RTT::Error) << "Could not get needed BHand joint: \""
+          << *joint_name_it << "\"" << RTT::endlog();
+        throw std::runtime_error(oss.str());
+      }
+    }
   }
 
   HandDevice::~HandDevice()

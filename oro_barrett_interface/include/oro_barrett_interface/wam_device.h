@@ -43,6 +43,7 @@ namespace oro_barrett_interface {
       parent_service_(parent_service)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
+      wam_service->doc("Barrett WAM robot interface");
 
       wam_service->addPort("effort_in", joint_effort_in);
       wam_service->addPort("calibration_status_in", joint_calibration_status_in);
@@ -77,7 +78,7 @@ namespace oro_barrett_interface {
           // Get the next joint
           joint = urdf_model.getLink(joint->parent_link_name)->parent_joint;
           // Make sure we didn't run out of links
-          if(!joint.get()) {
+          if(!joint) {
             std::ostringstream oss;
             RTT::log(RTT::Error) << "Ran out of joints while parsing URDF starting at joint: \""
               << tip_joint_name << "\"" << RTT::endlog();

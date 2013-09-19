@@ -15,6 +15,8 @@ namespace oro_barrett_hw {
   class HandHWDevice : public oro_barrett_interface::HandDevice
   {
   public:
+    virtual void initialize();
+    virtual void idle();
     virtual void readHW(RTT::Seconds time, RTT::Seconds period);
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period);
 
@@ -23,8 +25,9 @@ namespace oro_barrett_hw {
         const urdf::Model &urdf_model,
         const std::string &urdf_prefix,
         boost::shared_ptr<barrett::ProductManager> barrett_manager);
+
   private:
-    boost::shared_ptr<barrett::Hand> interface;
+    barrett::Hand *interface;
   };
 
   HandHWDevice::HandHWDevice(
@@ -37,7 +40,23 @@ namespace oro_barrett_hw {
         urdf_model, 
         urdf_prefix)
   {
+    // Get the hand interface
+    interface = barrett_manager->getHand();
+  }
 
+  void HandHWDevice::initialize()
+  {
+    using namespace barrett;
+    interface->initialize();
+    interface->close(Hand::GRASP,false);
+  }
+
+  void HandHWDevice::idle()
+  {
+    using namespace barrett;
+    interface->open(Hand::GRASP,false);
+    interface->close(Hand::SPREAD,false);
+    interface->idle();
   }
 
   void HandHWDevice::readHW(RTT::Seconds time, RTT::Seconds period)
@@ -47,15 +66,24 @@ namespace oro_barrett_hw {
       interface->update();
     } catch (const std::runtime_error& e) {
       RTT::log(RTT::Error) << "Could not read BHand state: " << e.what() << RTT::endlog();
+      return;
     }
 
-    // Get the state
+    // Get the state, and re-shape it
+    Eigen::Vector4d raw_inner_positions = interface->getInnerLinkPosition();
+    Eigen::Vector4d raw_outer_positions = interface->getOuterLinkPosition();
 
+    joint_position(0) = raw_inner_positions(3);
+    joint_position(1) = raw_inner_positions(3);
+    joint_position.block<3,1>(2,0) = raw_inner_positions.block<3,1>(0,0);
+    joint_position.block<3,1>(5,0) = raw_outer_positions.block<3,1>(0,0);
+
+    joint_position_out.write(joint_position);
   }
 
   void HandHWDevice::writeHW(RTT::Seconds time, RTT::Seconds period)
   {
-    // 
+    
   }
 }
 

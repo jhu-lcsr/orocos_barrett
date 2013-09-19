@@ -48,8 +48,7 @@ namespace oro_barrett_hw {
     /** \brief Construct a BHand interface
      *
      */
-    virtual bool configureHand(const std::string &urdf_prefix) 
-    { return false; }
+    virtual bool configureHand(const std::string &urdf_prefix);
 
     /** \brief Construct a WAM robot interface
      *

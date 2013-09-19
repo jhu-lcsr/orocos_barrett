@@ -64,9 +64,27 @@ bool BarrettHWManager::configureHook()
 
 bool BarrettHWManager::startHook()
 {
-  // Zero the commands before the arm is activated
-  if(wam_device_) {
-    wam_device_->setZero();
+  // Initialize the last update time
+  last_update_time_ = 
+    RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
+
+  // Initialize the hand
+  if(hand_device_) {
+    hand_device_->initialize();
+  }
+
+  // Read the state estimation
+  try {
+    if(wam_device_) {
+      // Zero the commands before the arm is activated
+      wam_device_->setZero();
+      // Write to the configuration ports
+      wam_device_->readConfig();
+      wam_device_->readHW(last_update_time_,this->getPeriod());
+    }
+  } catch(std::runtime_error &err) {
+    RTT::log(RTT::Error) << "Could not start WAM: " << err.what() << RTT::endlog();
+    return false;
   }
 
   /*if(!this->waitForMode(barrett::SafetyModule::ACTIVE)) {*/
@@ -75,24 +93,6 @@ bool BarrettHWManager::startHook()
   /*return false;*/
   /*}*/
 
-  // Write to the configuration ports
-  if(wam_device_) {
-    wam_device_->readConfig();
-  }
-
-  // Initialize the last update time
-  last_update_time_ = 
-    RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
-
-  // Read the state estimation
-  try {
-    if(wam_device_) {
-      wam_device_->readHW(last_update_time_,this->getPeriod());
-    }
-  } catch(std::runtime_error &err) {
-    RTT::log(RTT::Error) << "Could not start WAM: " << err.what() << RTT::endlog();
-    return false;
-  }
 
   return true;
 }
@@ -131,6 +131,9 @@ void BarrettHWManager::stopHook()
   if(!this->waitForMode(barrett::SafetyModule::IDLE)) {
     RTT::log(RTT::Warning) << "Could not IDLE the Barrett Hardware!" <<
       RTT::endlog();
+  }
+  if(hand_device_) {
+    hand_device_->idle();
   }
 }
 
@@ -190,6 +193,30 @@ bool BarrettHWManager::configureWam(const std::string &urdf_prefix)
       ex.what() << RTT::endlog();
     return false;
   }
+
+  return true;
+}
+
+
+bool BarrettHWManager::configureHand(const std::string &urdf_prefix)
+{
+  using namespace oro_barrett_interface;
+
+  try{
+    // Construct a new bhand device and "hand" service (interface and state storage)
+    hand_device_.reset();
+    hand_device_.reset(
+        new HandHWDevice(
+          this->provides(),
+          urdf_model_,
+          urdf_prefix,
+          barrett_manager_));
+  } catch(std::runtime_error &ex) {
+    RTT::log(RTT::Error) << "Could not configure Barrett Hand: " <<
+      ex.what() << RTT::endlog();
+    return false;
+  }
+  RTT::log(RTT::Info) << "Configured Barrett Hand." << RTT::endlog();
 
   return true;
 }
