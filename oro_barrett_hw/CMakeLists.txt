@@ -6,6 +6,9 @@ find_package(catkin REQUIRED
   oro_barrett_interface
   control_toolbox 
   urdf
+  rtt_ros
+  rtt_ros_tools
+  rtt_sensor_msgs
   )
 
 catkin_package(
@@ -37,6 +40,7 @@ orocos_component(barrett_hw_manager
   src/barrett_hw_manager.cpp)
 target_link_libraries(barrett_hw_manager
   ${urdf_LIBRARIES}
+  ${USE_OROCOS_LIBRARIES}
   ${BARRETT_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)

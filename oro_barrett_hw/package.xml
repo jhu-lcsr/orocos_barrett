@@ -16,13 +16,22 @@
   <build_depend>barrett</build_depend>
   <build_depend>oro_barrett_interface</build_depend>
   <build_depend>ocl-deployment</build_depend>
+  <build_depend>rtt_sensor_msgs</build_depend>
+  <build_depend>rtt_ros_tools</build_depend>
+
   <run_depend>urdf</run_depend>
   <run_depend>barrett</run_depend>
   <run_depend>oro_barrett_interface</run_depend>
+  <run_depend>kdl_typekit</run_depend>
+  <run_depend>eigen_typekit</run_depend>
+  <run_depend>rtt_sensor_msgs</run_depend>
+  <run_depend>rtt_ros_tools</run_depend>
 
   <export>
     <rtt_ros>
+      <plugin_depend>eigen_typekit</plugin_depend>
       <plugin_depend>rtt_rosparam</plugin_depend>
+      <plugin_depend>rtt_sensor_msgs</plugin_depend>
     </rtt_ros>
   </export>
 </package>

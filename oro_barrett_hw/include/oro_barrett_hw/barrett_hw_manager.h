@@ -62,6 +62,9 @@ namespace oro_barrett_hw {
      */
     virtual bool configureWam7(const std::string &urdf_prefix);
 
+    //! Get the real update period
+    double getRealPeriod();
+
   private:
 
     /** \brief Configure a WAM robot on this bus
@@ -99,6 +102,9 @@ namespace oro_barrett_hw {
     //\}
 
     RTT::Seconds last_update_time_;
+    RTT::Seconds period_;
+    RTT::Seconds read_duration_;
+    RTT::Seconds write_duration_;
 
     //! An RTT timer class for polling / waiting for a given mode
     class BarrettModeTimer : public RTT::os::Timer 

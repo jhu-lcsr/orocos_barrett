@@ -15,6 +15,10 @@ BarrettHWManager::BarrettHWManager(const std::string &name) :
 
   this->addProperty("config_path",config_path_)
     .doc("The path to the libbarrett config file (leave blank for default path).");
+
+  this->addProperty("real_period",period_);
+  this->addProperty("read_duration",read_duration_);
+  this->addProperty("write_duration",write_duration_);
 }
 
 bool BarrettHWManager::configureHook()
@@ -101,8 +105,20 @@ void BarrettHWManager::updateHook()
 {
   RTT::Seconds time = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
   RTT::Seconds period = time - last_update_time_;
+  period_ = period;
 
   if(wam_device_) {
+    RTT::os::TimeService::ticks write_start = RTT::os::TimeService::Instance()->getTicks();
+    try {
+      // Write the control command (force the write if the system is idle)
+      wam_device_->writeHW(time,period);
+    } catch(std::runtime_error &err) {
+      RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
+      this->error();
+    }
+    write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
+
+    RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
     try {
       // Read the state estimation
       wam_device_->readHW(time,period);
@@ -110,14 +126,7 @@ void BarrettHWManager::updateHook()
       RTT::log(RTT::Error) << "Could not read the WAM state: " << err.what() << RTT::endlog();
       this->error();
     }
-    try {
-      // Write the control command (force the write if the system is idle)
-      wam_device_->writeHW(time,period);
-      /*wam_device_->writeHWCalibration(time,period);*/
-    } catch(std::runtime_error &err) {
-      RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
-      this->error();
-    }
+    read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
   }
 
   last_update_time_ = time;

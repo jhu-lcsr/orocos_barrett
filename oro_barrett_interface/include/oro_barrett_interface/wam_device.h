@@ -9,6 +9,10 @@
 
 #include <urdf/model.h>
 
+#include <rtt_ros_tools/throttles.h>
+
+#include <sensor_msgs/JointState.h>
+
 namespace oro_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.
@@ -25,7 +29,7 @@ namespace oro_barrett_interface {
     //! Write the command to the hardware
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the calibration command 
-    virtual void writeHWCalibration(RTT::Seconds time, RTT::Seconds period) = 0;
+    virtual void calibrateNearHome() = 0;
   };
 
   //! Class for real and simulated 4- or 7-DOF WAMs
@@ -40,11 +44,32 @@ namespace oro_barrett_interface {
         RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
         const std::string &urdf_prefix) :
-      parent_service_(parent_service)
+      parent_service_(parent_service),
+      // Data members
+      joint_home_position(DOF),
+      joint_home_resolver_position(DOF),
+      joint_resolver_ranges(DOF),
+      joint_effort_limits(DOF),
+      joint_velocity_limits(DOF),
+      
+      joint_position(DOF),
+      joint_velocity(DOF),
+      joint_effort(DOF),
+      joint_resolver_position(DOF),
+      joint_calibration_burn_offsets(DOF),
+
+      // Throttles
+      joint_state_throttle(0.01)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
       wam_service->doc("Barrett WAM robot interface");
 
+      // Properties
+      wam_service->addProperty("home_position",joint_home_position);
+      wam_service->addProperty("home_resolver_position",joint_home_resolver_position);
+      wam_service->addProperty("effort",joint_effort);
+
+      // Data ports
       wam_service->addPort("effort_in", joint_effort_in);
       wam_service->addPort("calibration_status_in", joint_calibration_status_in);
       wam_service->addPort("calibration_burn_offsets_in", joint_calibration_burn_offsets_in);
@@ -59,8 +84,21 @@ namespace oro_barrett_interface {
       wam_service->addPort("velocity_limits_out", joint_velocity_limits_out);
       wam_service->addPort("joint_names_out", joint_names_out);
 
+      // ROS data ports
+      wam_service->addPort("joint_state_out", joint_state_out);
+
+      // Operations
+      wam_service->addOperation("calibrateNearHome", &WamDevice::calibrateNearHome, this)
+        .doc("Declare the actual position of the robot to be near the home position, so that it can home to actual zero");
+
       // Resize joint names
       joint_names.resize(DOF);
+
+      // Resize joint state
+      joint_state.name.resize(DOF);
+      joint_state.position.resize(DOF);
+      joint_state.velocity.resize(DOF);
+      joint_state.effort.resize(DOF);
 
       // Get URDF links starting at product tip link
       const std::string tip_joint_name = urdf_prefix+"/palm_yaw_joint"; 
@@ -119,6 +157,9 @@ namespace oro_barrett_interface {
       joint_names_out.write(joint_names);
     }
 
+    //! Jointspace vector type for convenience
+    typedef Eigen::VectorXd JointspaceVector;
+
   protected:
     //! RTT Service for WAM interfaces
     RTT::Service::shared_ptr parent_service_;
@@ -126,7 +167,9 @@ namespace oro_barrett_interface {
     // Configuration
     std::vector<std::string> 
       joint_names;
-    Eigen::Matrix<double,DOF,1> 
+    JointspaceVector 
+      joint_home_position,
+      joint_home_resolver_position,
       joint_resolver_ranges,
       joint_effort_limits,
       joint_velocity_limits;
@@ -134,7 +177,7 @@ namespace oro_barrett_interface {
     //! \name State
     //\{
     bool calibrated;
-    Eigen::Matrix<double,DOF,1> 
+    JointspaceVector 
       //joint_offsets,
       joint_position,
       joint_velocity,
@@ -143,11 +186,14 @@ namespace oro_barrett_interface {
       joint_calibration_burn_offsets;
     Eigen::Matrix<int,DOF,1> 
       joint_calibration_status;
+    sensor_msgs::JointState
+      joint_state;
+
     //\}
 
     //! \name Input ports
     //\{
-    RTT::InputPort<Eigen::Matrix<double,DOF,1> >
+    RTT::InputPort<JointspaceVector >
       joint_effort_in,
       joint_calibration_burn_offsets_in;
     RTT::InputPort<Eigen::Matrix<int,DOF,1> >
@@ -156,22 +202,26 @@ namespace oro_barrett_interface {
     
     //! \name State output ports
     //\{
-    RTT::OutputPort<Eigen::Matrix<double,DOF,1> >
+    RTT::OutputPort<JointspaceVector >
       joint_effort_out,
       joint_position_out,
       joint_velocity_out,
       joint_resolver_position_out;
+    RTT::OutputPort<sensor_msgs::JointState >
+      joint_state_out;
     //\}
 
     //! Configuration output ports
     //\{
-    RTT::OutputPort<Eigen::Matrix<double,DOF,1> >
+    RTT::OutputPort<JointspaceVector >
       joint_resolver_ranges_out,
       joint_effort_limits_out,
       joint_velocity_limits_out;
     RTT::OutputPort<std::vector<std::string> >
       joint_names_out;
     //\}
+    
+    rtt_ros_tools::PeriodicThrottle joint_state_throttle;
   };
 }
 
