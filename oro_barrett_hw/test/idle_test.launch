@@ -10,6 +10,11 @@
     <param name="bus_id" value="0"/>
   </group>
 
-  <param name="robot_description" command="$(find xacro)/xacro.py '$(find barrett_model)/robots/wam_7dof_wam.urdf.xacro'" />
+  <param name="robot_description" command="$(find xacro)/xacro.py
+    '$(find barrett_model)/robots/wam_7dof_wam.urdf.xacro'" />
 
+  <!--<node pkg="robot_state_publisher" type="robot_state_publisher"-->
+    <!--name="robot_state_publisher">-->
+    <!--<param name="publish_frequency" value="50"/>-->
+  <!--</node>-->
 </launch>

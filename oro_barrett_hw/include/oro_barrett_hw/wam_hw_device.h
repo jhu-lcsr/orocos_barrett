@@ -12,6 +12,8 @@
 
 #include <sensor_msgs/JointState.h>
 
+#include <rtt_ros_tools/time.h>
+
 namespace oro_barrett_hw {
 
   /** \brief State structure for a real WAM device
@@ -66,8 +68,7 @@ namespace oro_barrett_hw {
       // Compute actual position
       const Eigen::VectorXd actual_position =
         this->joint_home_position 
-        - this->joint_home_resolver_position
-        + mpos2jpos*this->joint_resolver_position;
+        + mpos2jpos*(this->joint_resolver_position - this->joint_home_resolver_position);
 
       // Set the actual position
       interface->definePosition(actual_position);
@@ -122,7 +123,7 @@ namespace oro_barrett_hw {
         }
 
         // Update the joint state message
-        this->joint_state.header.stamp = ros::Time(time);
+        this->joint_state.header.stamp = rtt_ros_tools::ros_rt_now();//.fromNSec(RTT::os::TimeService::Instance()->getNSecs());
         this->joint_state.name = this->joint_names;
         Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),DOF) = this->joint_position;
         Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),DOF) = this->joint_velocity;
