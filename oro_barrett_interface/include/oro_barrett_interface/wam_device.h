@@ -45,9 +45,12 @@ namespace oro_barrett_interface {
         const urdf::Model &urdf_model,
         const std::string &urdf_prefix) :
       parent_service_(parent_service),
+
+      read_resolver(false),
+
       // Data members
       joint_home_position(DOF),
-      joint_home_resolver_position(DOF),
+      joint_home_resolver_offset(DOF),
       joint_resolver_ranges(DOF),
       joint_effort_limits(DOF),
       joint_velocity_limits(DOF),
@@ -55,7 +58,7 @@ namespace oro_barrett_interface {
       joint_position(DOF),
       joint_velocity(DOF),
       joint_effort(DOF),
-      joint_resolver_position(DOF),
+      joint_resolver_offset(DOF),
       joint_calibration_burn_offsets(DOF),
 
       // Throttles
@@ -66,8 +69,9 @@ namespace oro_barrett_interface {
 
       // Properties
       wam_service->addProperty("home_position",joint_home_position);
-      wam_service->addProperty("home_resolver_position",joint_home_resolver_position);
+      wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset);
       wam_service->addProperty("effort",joint_effort);
+      wam_service->addProperty("read_resolver",read_resolver);
 
       // Data ports
       wam_service->addPort("effort_in", joint_effort_in);
@@ -77,7 +81,7 @@ namespace oro_barrett_interface {
       wam_service->addPort("effort_out", joint_effort_out);
       wam_service->addPort("position_out", joint_position_out);
       wam_service->addPort("velocity_out", joint_velocity_out);
-      wam_service->addPort("resolver_position_out", joint_resolver_position_out);
+      wam_service->addPort("resolver_offset_out", joint_resolver_offset_out);
 
       wam_service->addPort("resolver_ranges_out", joint_resolver_ranges_out);
       wam_service->addPort("effort_limits_out", joint_effort_limits_out);
@@ -86,6 +90,7 @@ namespace oro_barrett_interface {
 
       // ROS data ports
       wam_service->addPort("joint_state_out", joint_state_out);
+      wam_service->addPort("joint_resolver_state_out", joint_resolver_state_out);
 
       // Operations
       wam_service->addOperation("calibrateNearHome", &WamDevice::calibrateNearHome, this)
@@ -99,6 +104,9 @@ namespace oro_barrett_interface {
       joint_state.position.resize(DOF);
       joint_state.velocity.resize(DOF);
       joint_state.effort.resize(DOF);
+
+      joint_resolver_state.name.resize(DOF);
+      joint_resolver_state.position.resize(DOF);
 
       // Get URDF links starting at product tip link
       const std::string tip_joint_name = urdf_prefix+"/palm_yaw_joint"; 
@@ -145,7 +153,7 @@ namespace oro_barrett_interface {
       joint_position.setZero();
       joint_velocity.setZero();
       joint_effort.setZero();
-      joint_resolver_position.setZero();
+      joint_resolver_offset.setZero();
       joint_calibration_burn_offsets.setZero();
     }
 
@@ -165,11 +173,12 @@ namespace oro_barrett_interface {
     RTT::Service::shared_ptr parent_service_;
 
     // Configuration
+    bool read_resolver;
     std::vector<std::string> 
       joint_names;
     JointspaceVector 
       joint_home_position,
-      joint_home_resolver_position,
+      joint_home_resolver_offset,
       joint_resolver_ranges,
       joint_effort_limits,
       joint_velocity_limits;
@@ -182,11 +191,12 @@ namespace oro_barrett_interface {
       joint_position,
       joint_velocity,
       joint_effort,
-      joint_resolver_position,
+      joint_resolver_offset,
       joint_calibration_burn_offsets;
     Eigen::Matrix<int,DOF,1> 
       joint_calibration_status;
     sensor_msgs::JointState
+      joint_resolver_state,
       joint_state;
 
     //\}
@@ -206,8 +216,9 @@ namespace oro_barrett_interface {
       joint_effort_out,
       joint_position_out,
       joint_velocity_out,
-      joint_resolver_position_out;
+      joint_resolver_offset_out;
     RTT::OutputPort<sensor_msgs::JointState >
+      joint_resolver_state_out,
       joint_state_out;
     //\}
 

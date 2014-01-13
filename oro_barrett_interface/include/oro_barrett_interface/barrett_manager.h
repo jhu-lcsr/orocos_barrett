@@ -55,7 +55,6 @@ namespace oro_barrett_interface {
       .arg("urdf_prefix", "The joint name prefix in the URDF corresponding to the desired WAM robot.");
 
     this->addOperation("configureHand",&BarrettManager::configureHand, this)
-      .arg("torque_sensors","Whether or not the hand as knuckle joint torque sensors [true,false]")
       .arg("urdf_prefix", "The joint name prefix in the URDF corresponding to the desired BHand.");
   }
 }

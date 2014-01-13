@@ -129,6 +129,23 @@ void BarrettHWManager::updateHook()
     read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
   }
 
+  if(hand_device_) {
+    try {
+      // Write the control command (force the write if the system is idle)
+      hand_device_->writeHW(time,period);
+    } catch(std::runtime_error &err) {
+      RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
+      this->error();
+    }
+    try {
+      // Read the state estimation
+      hand_device_->readHW(time,period);
+    } catch(std::runtime_error &err) {
+      RTT::log(RTT::Error) << "Could not read the BHand state: " << err.what() << RTT::endlog();
+      this->error();
+    }
+  }
+
   last_update_time_ = time;
 }
 

@@ -26,6 +26,9 @@ namespace oro_barrett_hw {
         const std::string &urdf_prefix,
         boost::shared_ptr<barrett::ProductManager> barrett_manager);
 
+    virtual void open();
+    virtual void close();
+
   private:
     barrett::Hand *interface;
   };
@@ -63,7 +66,7 @@ namespace oro_barrett_hw {
   {
     // Poll the hardware
     try {
-      interface->update();
+      interface->update(barrett::Hand::S_POSITION|barrett::Hand::S_FINGERTIP_TORQUE,true);
     } catch (const std::runtime_error& e) {
       RTT::log(RTT::Error) << "Could not read BHand state: " << e.what() << RTT::endlog();
       return;
@@ -79,11 +82,32 @@ namespace oro_barrett_hw {
     joint_position.block<3,1>(5,0) = raw_outer_positions.block<3,1>(0,0);
 
     joint_position_out.write(joint_position);
+    
+    // Publish state to ROS 
+    if(this->joint_state_throttle.ready(0.02)) {
+      // Update the joint state message
+      this->joint_state.header.stamp = rtt_ros_tools::ros_rt_now();
+      this->joint_state.name = this->joint_names;
+      Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),8) = this->joint_position;
+      Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),8) = this->joint_velocity;
+      //Eigen::Map<Eigen::VectorXd>(this->joint_state.effort.data(),8) = this->joint_effort;
+
+      // Publish
+      this->joint_state_out.write(this->joint_state);
+    }
   }
 
   void HandHWDevice::writeHW(RTT::Seconds time, RTT::Seconds period)
   {
     
+  }
+
+  void HandHWDevice::open() {
+    interface->open(barrett::Hand::GRASP, false);
+  }
+
+  void HandHWDevice::close() {
+    interface->close(barrett::Hand::GRASP, false);
   }
 }
 

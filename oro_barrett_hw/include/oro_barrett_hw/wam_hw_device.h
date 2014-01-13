@@ -14,6 +14,8 @@
 
 #include <rtt_ros_tools/time.h>
 
+#include <angles/angles.h>
+
 namespace oro_barrett_hw {
 
   /** \brief State structure for a real WAM device
@@ -68,7 +70,7 @@ namespace oro_barrett_hw {
       // Compute actual position
       const Eigen::VectorXd actual_position =
         this->joint_home_position 
-        + mpos2jpos*(this->joint_resolver_position - this->joint_home_resolver_position);
+        + mpos2jpos*(this->joint_resolver_offset - this->joint_home_resolver_offset);
 
       // Set the actual position
       interface->definePosition(actual_position);
@@ -112,18 +114,11 @@ namespace oro_barrett_hw {
       // Write to data ports
       this->joint_position_out.write(this->joint_position);
       this->joint_velocity_out.write(this->joint_velocity);
-      this->joint_resolver_position_out.write(this->joint_resolver_position);
 
       // Publish state to ROS 
       if(this->joint_state_throttle.ready(0.02)) {
-        // Read resolver angles
-        std::vector<barrett::Puck*> pucks = interface->getPucks();	
-        for(size_t i=0; i<pucks.size(); i++) {
-          this->joint_resolver_position(i) = interface->getMotorPucks()[i].counts2rad(pucks[i]->getProperty(barrett::Puck::MECH));
-        }
-
         // Update the joint state message
-        this->joint_state.header.stamp = rtt_ros_tools::ros_rt_now();//.fromNSec(RTT::os::TimeService::Instance()->getNSecs());
+        this->joint_state.header.stamp = rtt_ros_tools::ros_rt_now();
         this->joint_state.name = this->joint_names;
         Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),DOF) = this->joint_position;
         Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),DOF) = this->joint_velocity;
@@ -131,6 +126,24 @@ namespace oro_barrett_hw {
           
         // Publish
         this->joint_state_out.write(this->joint_state);
+
+        // Read resolver angles
+        if(this->read_resolver) {
+          std::vector<barrett::Puck*> pucks = interface->getPucks();	
+          for(size_t i=0; i<pucks.size(); i++) {
+            this->joint_resolver_offset(i) = angles::normalize_angle(
+                interface->getMotorPucks()[i].counts2rad(pucks[i]->getProperty(barrett::Puck::MECH)));
+          }
+          
+          // Update the joint state message
+          this->joint_resolver_state.header.stamp = rtt_ros_tools::ros_rt_now();
+          this->joint_resolver_state.name = this->joint_names;
+          Eigen::Map<Eigen::VectorXd>(this->joint_resolver_state.position.data(),DOF) = this->joint_resolver_offset;
+
+          // Publish
+          this->joint_resolver_offset_out.write(this->joint_resolver_offset);
+          this->joint_resolver_state_out.write(this->joint_resolver_state);
+        }
       }
     }
 

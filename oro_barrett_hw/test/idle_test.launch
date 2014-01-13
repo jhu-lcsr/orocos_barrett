@@ -13,8 +13,9 @@
   <param name="robot_description" command="$(find xacro)/xacro.py
     '$(find barrett_model)/robots/wam_7dof_wam.urdf.xacro'" />
 
-  <!--<node pkg="robot_state_publisher" type="robot_state_publisher"-->
-    <!--name="robot_state_publisher">-->
-    <!--<param name="publish_frequency" value="50"/>-->
-  <!--</node>-->
+  <node pkg="robot_state_publisher" type="robot_state_publisher"
+    name="wam_state_publisher">
+    <param name="publish_frequency" value="50"/>
+    <remap from="joint_states" to="wam_joint_states"/>
+  </node>
 </launch>

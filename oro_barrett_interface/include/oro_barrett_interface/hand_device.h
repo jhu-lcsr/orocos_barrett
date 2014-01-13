@@ -8,6 +8,10 @@
 
 #include <urdf/model.h>
 
+#include <sensor_msgs/JointState.h>
+
+#include <rtt_ros_tools/throttles.h>
+
 namespace oro_barrett_interface {
 
   class HandDevice {
@@ -29,6 +33,10 @@ namespace oro_barrett_interface {
     //! Removes the added "wam" service 
     virtual ~HandDevice();
 
+    virtual void open() = 0;
+    virtual void close() = 0;
+
+
   protected:
     //! RTT Service for BHand interfaces
     RTT::Service::shared_ptr parent_service_;
@@ -43,41 +51,69 @@ namespace oro_barrett_interface {
       joint_actuation;
 
     // Joint state for active and passive joints
-    Eigen::Matrix<double,8,1>
+    Eigen::VectorXd
       joint_position,
+      joint_velocity,
       joint_position_cmd,
       joint_velocity_cmd,
       joint_effort_cmd;
 
-    Eigen::Vector4i
+    Eigen::VectorXi
       knuckle_torque;
+
+    sensor_msgs::JointState
+      joint_state;
     //\}
 
     //! \name Input ports
     //\{
-    RTT::InputPort<Eigen::Matrix<double,8,1> >
+    RTT::InputPort<Eigen::VectorXd >
       joint_effort_in,
       joint_position_in,
       joint_velocity_in;
     //\}
     
-    //! \name Input ports
+    //! \name Output ports
     //\{
-    RTT::OutputPort<Eigen::Matrix<double,8,1> >
+    RTT::OutputPort<Eigen::VectorXd >
       joint_effort_out,
       joint_position_out,
       joint_velocity_out;
+    RTT::OutputPort<sensor_msgs::JointState >
+      joint_state_out;
     //\}
+
+    rtt_ros_tools::PeriodicThrottle joint_state_throttle;
   };
 
   HandDevice::HandDevice(
         RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
         const std::string &urdf_prefix) :
-    parent_service_(parent_service)
+    parent_service_(parent_service),
+
+    joint_actuation(8),
+
+    joint_position(8),
+    joint_velocity(8),
+    joint_position_cmd(8),
+    joint_velocity_cmd(8),
+    joint_effort_cmd(8),
+
+    knuckle_torque(4),
+
+    // Throttles
+    joint_state_throttle(0.01)
   {
-    RTT::Service::shared_ptr wam_service = parent_service->provides("hand");
-    wam_service->doc("Barrett Hand interface.");
+    RTT::Service::shared_ptr hand_service = parent_service->provides("hand");
+    hand_service->doc("Barrett Hand interface.");
+
+    // Operations
+    hand_service->addOperation("open", &HandDevice::open, this);
+    hand_service->addOperation("close", &HandDevice::close, this);
+
+    // ROS data ports
+    hand_service->addPort("joint_state_out", joint_state_out);
 
     using namespace boost::assign;
     joint_names.clear();
@@ -104,6 +140,12 @@ namespace oro_barrett_interface {
         throw std::runtime_error(oss.str());
       }
     }
+    
+    // Resize joint state
+    joint_state.name.resize(8);
+    joint_state.position.resize(8);
+    joint_state.velocity.resize(8);
+    joint_state.effort.resize(8);
   }
 
   HandDevice::~HandDevice()

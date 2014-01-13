@@ -9,6 +9,7 @@ find_package(catkin REQUIRED
   rtt_ros
   rtt_ros_tools
   rtt_sensor_msgs
+  angles
   )
 
 catkin_package(
