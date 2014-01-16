@@ -75,7 +75,6 @@ namespace oro_barrett_interface {
 
       // Data ports
       wam_service->addPort("effort_in", joint_effort_in);
-      wam_service->addPort("calibration_status_in", joint_calibration_status_in);
       wam_service->addPort("calibration_burn_offsets_in", joint_calibration_burn_offsets_in);
 
       wam_service->addPort("effort_out", joint_effort_out);
@@ -193,8 +192,6 @@ namespace oro_barrett_interface {
       joint_effort,
       joint_resolver_offset,
       joint_calibration_burn_offsets;
-    Eigen::Matrix<int,DOF,1> 
-      joint_calibration_status;
     sensor_msgs::JointState
       joint_resolver_state,
       joint_state;
@@ -206,8 +203,6 @@ namespace oro_barrett_interface {
     RTT::InputPort<JointspaceVector >
       joint_effort_in,
       joint_calibration_burn_offsets_in;
-    RTT::InputPort<Eigen::Matrix<int,DOF,1> >
-      joint_calibration_status_in;
     //\}
     
     //! \name State output ports

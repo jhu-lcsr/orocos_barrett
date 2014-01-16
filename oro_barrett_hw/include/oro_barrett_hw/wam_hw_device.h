@@ -154,11 +154,24 @@ namespace oro_barrett_hw {
       // Check if the effort command port is connected
       if(this->joint_effort_in.connected()) {
         // Read newest command from data ports 
-        if(this->joint_effort_in.readNewest(this->joint_effort) != RTT::NewData) {
+        Eigen::VectorXd joint_effort_tmp(DOF);
+        bool new_effort_cmd = this->joint_effort_in.readNewest(joint_effort_tmp) == RTT::NewData;
+
+        // Do nothing if there's no new command
+        if(!new_effort_cmd) {
           return;
         }
+
+        // Make sure the effort command is the right size
+        if(joint_effort_tmp.size() == (unsigned)DOF) {
+          this->joint_effort = joint_effort_tmp;
+        } else {
+          this->joint_effort.setZero();
+        }
+
       } else {
         // Not connected, zero the command
+        this->joint_effort.resize(DOF);
         this->joint_effort.setZero();
       }
 
