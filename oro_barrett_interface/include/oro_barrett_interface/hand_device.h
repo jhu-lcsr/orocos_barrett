@@ -109,8 +109,10 @@ namespace oro_barrett_interface {
     hand_service->doc("Barrett Hand interface.");
 
     // Operations
-    hand_service->addOperation("open", &HandDevice::open, this);
-    hand_service->addOperation("close", &HandDevice::close, this);
+    hand_service->addOperation("initialize", &HandDevice::initialize, this, RTT::OwnThread);
+    hand_service->addOperation("idle", &HandDevice::idle, this, RTT::OwnThread);
+    hand_service->addOperation("open", &HandDevice::open, this, RTT::OwnThread);
+    hand_service->addOperation("close", &HandDevice::close, this, RTT::OwnThread);
 
     // ROS data ports
     hand_service->addPort("joint_state_out", joint_state_out);

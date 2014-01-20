@@ -30,6 +30,8 @@ namespace oro_barrett_interface {
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the calibration command 
     virtual void calibrateNearHome() = 0;
+    //! The safety mode (IDLE/ACTIVE/ESTOP)
+    virtual unsigned int getSafetyMode() = 0;
   };
 
   //! Class for real and simulated 4- or 7-DOF WAMs
@@ -62,7 +64,13 @@ namespace oro_barrett_interface {
       joint_calibration_burn_offsets(DOF),
 
       // Throttles
-      joint_state_throttle(0.01)
+      joint_state_throttle(0.01),
+
+      // Counters
+      warning_count(0),
+
+      // Modes
+      safety_mode(0)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
       wam_service->doc("Barrett WAM robot interface");
@@ -72,6 +80,7 @@ namespace oro_barrett_interface {
       wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset);
       wam_service->addProperty("effort",joint_effort);
       wam_service->addProperty("read_resolver",read_resolver);
+      wam_service->addProperty("warning_count",warning_count);
 
       // Data ports
       wam_service->addPort("effort_in", joint_effort_in);
@@ -92,7 +101,7 @@ namespace oro_barrett_interface {
       wam_service->addPort("joint_resolver_state_out", joint_resolver_state_out);
 
       // Operations
-      wam_service->addOperation("calibrateNearHome", &WamDevice::calibrateNearHome, this)
+      wam_service->addOperation("calibrateNearHome", &WamDevice::calibrateNearHome, this, RTT::OwnThread)
         .doc("Declare the actual position of the robot to be near the home position, so that it can home to actual zero");
 
       // Resize joint names
@@ -164,6 +173,11 @@ namespace oro_barrett_interface {
       joint_names_out.write(joint_names);
     }
 
+    virtual unsigned int getSafetyMode()
+    {
+      return safety_mode; 
+    }
+
     //! Jointspace vector type for convenience
     typedef Eigen::VectorXd JointspaceVector;
 
@@ -228,6 +242,9 @@ namespace oro_barrett_interface {
     //\}
     
     rtt_ros_tools::PeriodicThrottle joint_state_throttle;
+
+    unsigned long warning_count;
+    unsigned int safety_mode;
   };
 }
 

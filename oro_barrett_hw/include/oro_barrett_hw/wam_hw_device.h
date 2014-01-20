@@ -81,6 +81,10 @@ namespace oro_barrett_hw {
       // Poll the hardware
       try {
         interface->update();
+        // Get the safety module status
+        if (interface->getSafetyModule() != NULL) {
+          this->safety_mode = interface->getSafetyModule()->getMode(true);
+        }
       } catch (const std::runtime_error& e) {
         if (interface->getSafetyModule() != NULL  &&
             interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ESTOP) 
@@ -149,8 +153,6 @@ namespace oro_barrett_hw {
 
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period)
     {
-      static int warning_throttle = 0;
-
       // Check if the effort command port is connected
       if(this->joint_effort_in.connected()) {
         // Read newest command from data ports 
@@ -185,10 +187,14 @@ namespace oro_barrett_hw {
       for(size_t i=0; i<DOF; i++) {
         // Check if the joint effort st
         if(std::abs(this->joint_effort(i)) > this->joint_effort_limits[i]) {
-          if(warning_throttle++ % 1000) {
-            RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
-              << ") of joint (" << i << ") exceeded safety limits! They have "
-              "been truncated to: +/- " << this->joint_effort_limits[i] << RTT::endlog();
+          this->warning_count++;
+          if(this->warning_count % 1000 == 0) {
+            // This warning can kill heartbeats
+            /*
+             *RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
+             *  << ") of joint (" << i << ") exceeded safety limits! They have "
+             *  "been truncated to: +/- " << this->joint_effort_limits[i] << RTT::endlog();
+             */
           }
           // Truncate this joint torque
           this->joint_effort(i) = std::max(

@@ -3,6 +3,8 @@
 
 #include <oro_barrett_hw/barrett_hw_manager.h>
 
+#include <barrett/products/puck.h>
+
 using namespace oro_barrett_hw;
 
 BarrettHWManager::BarrettHWManager(const std::string &name) :
@@ -74,12 +76,13 @@ bool BarrettHWManager::startHook()
 
   // Initialize the hand
   if(hand_device_) {
-    hand_device_->initialize();
+    // NOTE: The barrett hand will deadlock on initialization if the robot is IDLE
   }
 
   // Read the state estimation
   try {
     if(wam_device_) {
+      RTT::log(RTT::Debug) << "Initializing WAM..." << RTT::endlog();
       // Zero the commands before the arm is activated
       wam_device_->setZero();
       // Write to the configuration ports
@@ -107,36 +110,26 @@ void BarrettHWManager::updateHook()
   RTT::Seconds period = time - last_update_time_;
   period_ = period;
 
+  // Read
+  RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
   if(wam_device_) {
-    RTT::os::TimeService::ticks write_start = RTT::os::TimeService::Instance()->getTicks();
-    try {
-      // Write the control command (force the write if the system is idle)
-      wam_device_->writeHW(time,period);
-    } catch(std::runtime_error &err) {
-      RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
-      this->error();
-    }
-    write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
-
-    RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
     try {
       // Read the state estimation
       wam_device_->readHW(time,period);
+      // Flush the buffers if the safety mode switched to idle
+      if(wam_device_->getSafetyMode() == barrett::SafetyModule::IDLE 
+         && wam_device_->getSafetyMode() != safety_mode_) 
+      {
+        bus_manager_->flushBuffers();
+      }
+      // Store the new safety mode
+      safety_mode_ = (barrett::SafetyModule::SafetyMode)wam_device_->getSafetyMode();
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not read the WAM state: " << err.what() << RTT::endlog();
       this->error();
     }
-    read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
   }
-
   if(hand_device_) {
-    try {
-      // Write the control command (force the write if the system is idle)
-      hand_device_->writeHW(time,period);
-    } catch(std::runtime_error &err) {
-      RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
-      this->error();
-    }
     try {
       // Read the state estimation
       hand_device_->readHW(time,period);
@@ -145,6 +138,29 @@ void BarrettHWManager::updateHook()
       this->error();
     }
   }
+  read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
+
+  // Write
+  RTT::os::TimeService::ticks write_start = RTT::os::TimeService::Instance()->getTicks();
+  if(wam_device_) {
+    try {
+      // Write the control command (force the write if the system is idle)
+      wam_device_->writeHW(time,period);
+    } catch(std::runtime_error &err) {
+      RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
+      this->error();
+    }
+  }
+  if(hand_device_) {
+    try {
+      // Write the control command (force the write if the system is idle)
+      hand_device_->writeHW(time,period);
+    } catch(std::runtime_error &err) {
+      RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
+      this->error();
+    }
+  }
+  write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
 
   last_update_time_ = time;
 }

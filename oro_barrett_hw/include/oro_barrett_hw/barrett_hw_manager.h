@@ -106,6 +106,8 @@ namespace oro_barrett_hw {
     RTT::Seconds read_duration_;
     RTT::Seconds write_duration_;
 
+    barrett::SafetyModule::SafetyMode safety_mode_;
+
     //! An RTT timer class for polling / waiting for a given mode
     class BarrettModeTimer : public RTT::os::Timer 
     {
