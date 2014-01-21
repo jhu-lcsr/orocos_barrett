@@ -12,6 +12,8 @@
 
 #include <rtt_ros_tools/throttles.h>
 
+#include <oro_barrett_msgs/BHandCmd.h>
+
 namespace oro_barrett_interface {
 
   class HandDevice {
@@ -24,6 +26,12 @@ namespace oro_barrett_interface {
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
+    //! Set joint to position mode
+    virtual void setPositionMode(unsigned int joint_id) = 0;
+    //! Set joint to velocity mode
+    virtual void setVelocityMode(unsigned int joint_id) = 0;
+    //! Set joint to torque mode
+    virtual void setEffortMode(unsigned int joint_id) = 0;
 
     HandDevice(
         RTT::Service::shared_ptr parent_service,
@@ -63,6 +71,8 @@ namespace oro_barrett_interface {
 
     sensor_msgs::JointState
       joint_state;
+    oro_barrett_msgs::BHandCmd
+      joint_cmd;
     //\}
 
     //! \name Input ports
@@ -71,6 +81,9 @@ namespace oro_barrett_interface {
       joint_effort_in,
       joint_position_in,
       joint_velocity_in;
+
+    RTT::InputPort<oro_barrett_msgs::BHandCmd>
+      joint_cmd_in;
     //\}
     
     //! \name Output ports
@@ -96,9 +109,9 @@ namespace oro_barrett_interface {
 
     joint_position(8),
     joint_velocity(8),
-    joint_position_cmd(8),
-    joint_velocity_cmd(8),
-    joint_effort_cmd(8),
+    joint_position_cmd(4),
+    joint_velocity_cmd(4),
+    joint_effort_cmd(4),
 
     knuckle_torque(4),
 
@@ -113,8 +126,17 @@ namespace oro_barrett_interface {
     hand_service->addOperation("idle", &HandDevice::idle, this, RTT::OwnThread);
     hand_service->addOperation("open", &HandDevice::open, this, RTT::OwnThread);
     hand_service->addOperation("close", &HandDevice::close, this, RTT::OwnThread);
+    hand_service->addOperation("setPositionMode", &HandDevice::setPositionMode, this, RTT::OwnThread);
+    hand_service->addOperation("setVelocityMode", &HandDevice::setVelocityMode, this, RTT::OwnThread);
+    hand_service->addOperation("setEffortMode", &HandDevice::setEffortMode, this, RTT::OwnThread);
+
+    hand_service->addConstant("F1",0);
+    hand_service->addConstant("F2",1);
+    hand_service->addConstant("F3",2);
+    hand_service->addConstant("SPREAD",3);
 
     // ROS data ports
+    hand_service->addPort("joint_cmd_in", joint_cmd_in);
     hand_service->addPort("joint_state_out", joint_state_out);
 
     using namespace boost::assign;
