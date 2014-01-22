@@ -22,16 +22,16 @@ namespace oro_barrett_interface {
     virtual void initialize() = 0;
     //! Idle the hand (open it up and disable the motors)
     virtual void idle() = 0;
+    //! Run the hand (process commands)
+    virtual void run() = 0;
+    //! Set finger compliance
+    virtual void setCompliance(bool enable) = 0;
+
+
     //! Read the hardware state and publish it
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
-    //! Set joint to position mode
-    virtual void setPositionMode(unsigned int joint_id) = 0;
-    //! Set joint to velocity mode
-    virtual void setVelocityMode(unsigned int joint_id) = 0;
-    //! Set joint to torque mode
-    virtual void setEffortMode(unsigned int joint_id) = 0;
 
     HandDevice(
         RTT::Service::shared_ptr parent_service,
@@ -123,12 +123,11 @@ namespace oro_barrett_interface {
 
     // Operations
     hand_service->addOperation("initialize", &HandDevice::initialize, this, RTT::OwnThread);
+    hand_service->addOperation("run", &HandDevice::run, this, RTT::OwnThread);
     hand_service->addOperation("idle", &HandDevice::idle, this, RTT::OwnThread);
     hand_service->addOperation("open", &HandDevice::open, this, RTT::OwnThread);
     hand_service->addOperation("close", &HandDevice::close, this, RTT::OwnThread);
-    hand_service->addOperation("setPositionMode", &HandDevice::setPositionMode, this, RTT::OwnThread);
-    hand_service->addOperation("setVelocityMode", &HandDevice::setVelocityMode, this, RTT::OwnThread);
-    hand_service->addOperation("setEffortMode", &HandDevice::setEffortMode, this, RTT::OwnThread);
+    hand_service->addOperation("setCompliance", &HandDevice::setCompliance, this, RTT::OwnThread);
 
     hand_service->addConstant("F1",0);
     hand_service->addConstant("F2",1);
