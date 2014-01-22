@@ -27,6 +27,14 @@ namespace oro_barrett_interface {
     //! Set finger compliance
     virtual void setCompliance(bool enable) = 0;
 
+    //! Set joint to torque mode
+    virtual void setTorqueMode(unsigned int joint_index) = 0;
+    //! Set joint to position mode
+    virtual void setPositionMode(unsigned int joint_index) = 0;
+    //! Set joint to velocity mode
+    virtual void setVelocityMode(unsigned int joint_index) = 0;
+    //! Set joint to trapezoidal mode
+    virtual void setTrapezoidalMode(unsigned int joint_index) = 0;
 
     //! Read the hardware state and publish it
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
@@ -43,7 +51,6 @@ namespace oro_barrett_interface {
 
     virtual void open() = 0;
     virtual void close() = 0;
-
 
   protected:
     //! RTT Service for BHand interfaces
@@ -62,9 +69,10 @@ namespace oro_barrett_interface {
     Eigen::VectorXd
       joint_position,
       joint_velocity,
+      joint_torque_cmd,
       joint_position_cmd,
       joint_velocity_cmd,
-      joint_effort_cmd;
+      joint_trapezoidal_cmd;
 
     Eigen::VectorXi
       knuckle_torque;
@@ -78,9 +86,10 @@ namespace oro_barrett_interface {
     //! \name Input ports
     //\{
     RTT::InputPort<Eigen::VectorXd >
-      joint_effort_in,
+      joint_torque_in,
       joint_position_in,
-      joint_velocity_in;
+      joint_velocity_in,
+      joint_trapezoidal_in;
 
     RTT::InputPort<oro_barrett_msgs::BHandCmd>
       joint_cmd_in;
@@ -89,7 +98,7 @@ namespace oro_barrett_interface {
     //! \name Output ports
     //\{
     RTT::OutputPort<Eigen::VectorXd >
-      joint_effort_out,
+      joint_torque_out,
       joint_position_out,
       joint_velocity_out;
     RTT::OutputPort<sensor_msgs::JointState >
@@ -109,9 +118,10 @@ namespace oro_barrett_interface {
 
     joint_position(8),
     joint_velocity(8),
+    joint_torque_cmd(4),
     joint_position_cmd(4),
     joint_velocity_cmd(4),
-    joint_effort_cmd(4),
+    joint_trapezoidal_cmd(4),
 
     knuckle_torque(4),
 
@@ -128,6 +138,11 @@ namespace oro_barrett_interface {
     hand_service->addOperation("open", &HandDevice::open, this, RTT::OwnThread);
     hand_service->addOperation("close", &HandDevice::close, this, RTT::OwnThread);
     hand_service->addOperation("setCompliance", &HandDevice::setCompliance, this, RTT::OwnThread);
+
+    hand_service->addOperation("setTorqueMode", &HandDevice::setTorqueMode, this, RTT::OwnThread);
+    hand_service->addOperation("setPositionMode", &HandDevice::setPositionMode, this, RTT::OwnThread);
+    hand_service->addOperation("setVelocityMode", &HandDevice::setVelocityMode, this, RTT::OwnThread);
+    hand_service->addOperation("setTrapezoidalMode", &HandDevice::setTrapezoidalMode, this, RTT::OwnThread);
 
     hand_service->addConstant("F1",0);
     hand_service->addConstant("F2",1);

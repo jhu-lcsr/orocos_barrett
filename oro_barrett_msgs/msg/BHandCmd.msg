@@ -1,7 +1,13 @@
+
+# Joint commands
 float64[4] cmd
+
+# Joint command mode
 uint8[4] mode
 
-uint8 CMD_IDLE=0
-uint8 CMD_POS=1
-uint8 CMD_VEL=2
-uint8 CMD_EFF=3
+# Motor command mode
+uint8 MODE_IDLE = 0
+uint8 MODE_TORQUE = 2
+uint8 MODE_PID = 3
+uint8 MODE_VELOCITY = 4
+uint8 MODE_TRAPEZOIDAL= 5
