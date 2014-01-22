@@ -34,8 +34,8 @@ namespace oro_barrett_hw {
     virtual void close();
 
     enum Mode {
-      IDLE = 0,
       UNINITIALIZED = 0,
+      IDLE,
       INITIALIZE,
       RUN 
     };
@@ -101,6 +101,21 @@ namespace oro_barrett_hw {
         }
         pucks[3]->setProperty(Puck::TSTOP, (enable) ? (150) : (0), false);
       }
+
+      void setVelocityMode(unsigned int digits) {
+         using namespace barrett;
+         setProperty(digits, Puck::MODE, MotorPuck::MODE_TORQUE);
+      }
+
+       void setPositionMode(unsigned int digits) {
+         using namespace barrett;
+         setProperty(digits, Puck::MODE, MotorPuck::MODE_VELOCITY);
+       }
+
+       void setEffortMode(unsigned int digits) {
+         using namespace barrett;
+         setProperty(digits, Puck::MODE, MotorPuck::MODE_TORQUE);
+       }
 
       static const int CMD_HI = 13;
       static const int CMD_M = 19;
@@ -246,6 +261,8 @@ namespace oro_barrett_hw {
     }
 
     switch(mode) {
+      case UNINITIALIZED:
+        break;
       case IDLE:
         break;
       case INITIALIZE:
@@ -289,9 +306,7 @@ namespace oro_barrett_hw {
 
           bool new_joint_cmd = (joint_cmd_in.read(joint_cmd) == RTT::NewData);
 
-          bool new_pos_mode = false,
-               new_vel_mode = false,
-               new_eff_mode = false;
+          bool modes_changed = false;
 
           // Check sizes
           if(joint_velocity_cmd.size() != 4 ||
@@ -310,22 +325,28 @@ namespace oro_barrett_hw {
             for(unsigned int i=0; i<4; i++) {
               switch(joint_cmd.mode[i]) {
                 case oro_barrett_msgs::BHandCmd::CMD_POS:
-                  new_pos_mode = this->setPositionMode(i);
                   new_pos_cmd = true;
                   joint_position_cmd[i] = joint_cmd.cmd[i];
+                  modes_changed |= this->setPositionMode(i);
                   break;
                 case oro_barrett_msgs::BHandCmd::CMD_VEL:
-                  new_vel_mode = this->setVelocityMode(i);
                   new_vel_cmd = true;
                   joint_velocity_cmd[i] = joint_cmd.cmd[i];
+                  modes_changed |= this->setVelocityMode(i);
                   break;
                 case oro_barrett_msgs::BHandCmd::CMD_EFF:
-                  new_eff_mode = this->setEffortMode(i);
                   new_eff_cmd = true;
                   joint_effort_cmd[i] = joint_cmd.cmd[i];
+                  modes_changed |= this->setEffortMode(i);
                   break;
               };
             }
+          }
+
+          if(modes_changed) {
+            interface->setPositionMode(mode_pos);
+            interface->setVelocityMode(mode_vel);
+            interface->setTorqueMode(mode_eff);
           }
 
           // Send commands
@@ -338,9 +359,6 @@ namespace oro_barrett_hw {
           }
           if(new_eff_cmd) {
             interface->setTorqueCommand(joint_effort_cmd, mode_eff); 
-            if(new_eff_mode) {
-              interface->setTorqueMode(mode_eff);
-            }
           }
         }
         break;
