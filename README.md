@@ -127,4 +127,10 @@ Before it can be used, the hand also needs to be homed:
 barrett_hw_manager.hand.initialize();
 ```
 
-This will open and close the hand, and afterwards the hand will output state and accept commands.
+This will open and close the hand, and afterwards the hand will output state and accept commands. 
+
+If the BHand has already been homed since it was turned on, you only need to run the following to start it reporting position and accepting commands:
+
+```cpp
+barrett_hw_manager.hand.run();
+```
