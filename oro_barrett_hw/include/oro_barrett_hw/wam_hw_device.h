@@ -53,6 +53,9 @@ namespace oro_barrett_hw {
             barrett_manager->getSafetyModule(), 
             wam_config["low_level"]));
 
+      // Enable resolver reading
+      this->read_resolver = true;
+
       // Initialize resolver ranges
       this->computeResolverRanges();
     }
@@ -74,6 +77,9 @@ namespace oro_barrett_hw {
 
       // Set the actual position
       interface->definePosition(actual_position);
+
+      // Disable resolver reading now that we've calibrated
+      this->read_resolver = false;
     }
 
     virtual void readHW(RTT::Seconds time, RTT::Seconds period)
