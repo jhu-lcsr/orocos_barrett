@@ -56,4 +56,73 @@ Now you can move on to trying the examples.
 
 ## Examples
 
+See each package for usage examples for both simulated and real robots.
 
+### Bringing up a Real WAM
+
+First, load the following parameters onto the ROS parameter server. These include the CANBus ID, the home position, and the resolver (MECH encoder) offsets in radians at the home position. In addition, make sure the `/robot_description` ROS parameter is set with the URDF from the [barrett_model](http://github.com/jhu-lcsr/barrett_model) package.
+
+```yml
+deployer:
+  barrett_hw_manager:
+    bus_id: 0
+    wam:
+      home_position: [0.0, -1.5708, 0.0, 3.1415, 0.0, -1.5708, 1.5708]
+      home_resolver_offset: [0.544563, -2.09235, 0.944932, -1.35757, 2.11383, 1.18423, 2.23808]
+```
+
+Second, import the Orocos Barrett components and create and configure a Barrett Hardware Manager and a WAM like the following orocos script:
+
+```cpp
+import("rtt_ros");
+ros.import("oro_barrett_hw");
+
+/* Create the barrett manager */
+loadComponent("barrett_hw_manager","oro_barrett_hw::BarrettHWManager");
+loadService("barrett_hw_manager","rosparam");
+
+/* Load parameters from ROS */
+barrett_hw_manager.rosparam.getAll();
+barrett_hw_manager.rosparam.getAbsolute("robot_description");
+
+/* Configure a 7-DOF WAM */
+barrett_hw_manager.configure();
+barrett_hw_manager.configureWam7("wam");
+barrett_hw_manager.rosparam.getComponentPrivate("wam");
+```
+
+Second, the WAM might need to be homed. To do this, move the WAM _near_ the known calibration pose, and run the following Orocos script:
+
+```cpp
+barrett_hw_manager.wam.calibrateNearHome();
+```
+
+After homing the WAM, you can enable your controllers and activate the WAM.
+
+If the calibration offsets are unknown, you can inspect the current resolver offsets (as `resolver_offset_out`) by listing the WAM's properties in the deployer:
+
+```cpp
+ls barrett_hw_manager.wam
+```
+
+If the wam has already been homed since it was shut down, you don't need to home it, but you can turn off the reading of the resolver angles to save CANBus bandwidth:
+
+```cpp
+barrett_hw_manager.wam.read_resolver = 0
+```
+
+### Bringing up a Real BHand
+
+You can also add a Barrett BHand 280 to the Hardware Manager. Similarly to above, construct the BHand like the following Orocos script:
+
+```cpp
+barrett_hw_manager.configureHand("wam/bhand");
+```
+
+Before it can be used, the hand also needs to be homed:
+
+```cpp
+barrett_hw_manager.hand.initialize();
+```
+
+This will open and close the hand, and afterwards the hand will output state and accept commands.
