@@ -243,6 +243,7 @@ namespace oro_barrett_hw {
   void HandHWDevice::run()
   {
     mode = RUN;
+    min_period = 0.33;
   }
 
   void HandHWDevice::setCompliance(bool enable)
@@ -328,7 +329,7 @@ namespace oro_barrett_hw {
               init_state = SEEK_FINGERS;
               break;
             case SEEK_FINGERS:
-              if(interface->doneMoving(Hand::WHOLE_HAND, true)) {
+              if(interface->doneMoving(Hand::GRASP, true)) {
                 init_state = INIT_SPREAD;
               }
               break;
@@ -337,7 +338,7 @@ namespace oro_barrett_hw {
               init_state = SEEK_SPREAD;
               break;
             case SEEK_SPREAD:
-              if(interface->doneMoving(Hand::WHOLE_HAND, true)) {
+              if(interface->doneMoving(Hand::SPREAD, true)) {
                 init_state = INIT_CLOSE;
               }
               break;
