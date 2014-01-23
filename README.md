@@ -22,6 +22,8 @@ by a single libbarrett `barrett::ProductManager` and is used in
 and simulated hardware, respectively. See each package for more information
 about its contents.
 
+These packages require Orocos and rtt_ros_integration version 2.7 or greater.
+
 ## Building
 
 Building the rtt\_barrett packages from source is most easily done with a pair
