@@ -16,6 +16,7 @@
 
 #include <kdl/tree.hpp>
 #include <kdl_parser/kdl_parser.hpp>
+#include <kdl/frames_io.hpp>
 
 namespace oro_barrett_interface {
 
@@ -23,11 +24,6 @@ namespace oro_barrett_interface {
   {
     const std::string element_name = subroot->first;
     const KDL::TreeElement element = subroot->second;
-    const std::string element_parent_name = element.parent->first;
-
-    // Add this segment to the subtree
-    subtree.addSegment(element.segment, element_parent_name); 
-    RTT::log(RTT::Debug) << "Adding segment " <<element_name<< " to parent "<< element_parent_name <<RTT::endlog();
 
     // Add the children segments to the subtree
     std::vector<KDL::SegmentMap::const_iterator>::const_iterator it;
@@ -35,6 +31,13 @@ namespace oro_barrett_interface {
         it != element.children.end();
         ++it)
     {
+      const std::string child_name = (*it)->first;
+      const KDL::TreeElement child = (*it)->second;
+
+      RTT::log(RTT::Debug) << "Adding segment " <<child_name<< " to parent "<< element_name <<RTT::endlog();
+
+      // Add this segment to the subtree
+      subtree.addSegment(child.segment, element_name); 
       getSubtree(tree, *it, subtree);
     }
   }
@@ -252,10 +255,12 @@ namespace oro_barrett_interface {
       throw std::runtime_error(oss.str());
     }
 
-    // Get the bhand subtree
+    // Get the root link of the bhand
     KDL::SegmentMap::const_iterator bhand_palm_link = full_tree.getSegment(urdf_prefix+"/bhand_palm_link");
-    kdl_tree_ = KDL::Tree(bhand_palm_link->second.parent->second.segment.getName());
-    getSubtree(full_tree, full_tree.getSegment(urdf_prefix+"/bhand_palm_link"), kdl_tree_);
+    // Create a KDL tree with the same root name as the actual hand
+    kdl_tree_ = KDL::Tree(urdf_prefix+"/bhand_palm_link");
+    // Get the bhand subtree
+    getSubtree(full_tree, bhand_palm_link, kdl_tree_);
     
     // Resize joint state
     joint_state.name.resize(8);
@@ -284,6 +289,7 @@ namespace oro_barrett_interface {
     //RTT::log(RTT::Debug) << "Adding mass from joint" << joint_name << RTT::endlog();
 
     frame = frame * segment.pose(q_map.find(joint_name)->second); 
+    RTT::log(RTT::Debug) << "Segment pose is: " << std::endl << frame << RTT::endlog();
 
     // Get link center of gravity
     KDL::Vector link_xyz = segment.getInertia().getCOG();
