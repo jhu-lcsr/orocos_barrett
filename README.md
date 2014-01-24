@@ -96,7 +96,8 @@ barrett_hw_manager.rosparam.getComponentPrivate("wam");
 Second, the WAM might need to be homed. To do this, move the WAM _near_ the known calibration pose, and run the following Orocos script:
 
 ```cpp
-barrett_hw_manager.wam.calibrateNearHome();
+barrett_hw_manager.wam.initialize();
+barrett_hw_manager.wam.run()
 ```
 
 After homing the WAM, you can enable your controllers and activate the WAM.
@@ -110,7 +111,7 @@ ls barrett_hw_manager.wam
 If the wam has already been homed since it was shut down, you don't need to home it, but you can turn off the reading of the resolver angles to save CANBus bandwidth:
 
 ```cpp
-barrett_hw_manager.wam.read_resolver = 0
+barrett_hw_manager.wam.run()
 ```
 
 ### Bringing up a Real BHand
