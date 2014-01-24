@@ -6,6 +6,7 @@ find_package(catkin REQUIRED
   oro_barrett_interface
   control_toolbox 
   urdf
+  kdl_parser
   rtt_ros
   rtt_ros_tools
   rtt_sensor_msgs
@@ -24,12 +25,14 @@ find_package(OROCOS-RTT REQUIRED)
 include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 find_package(Xenomai REQUIRED)
 find_package(barrett REQUIRED)
+find_package(Orocos-KDL REQUIRED)
 
 include_directories(include 
   ${Eigen_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   ${BARRETT_INCLUDE_DIRS}
-  ${Xenomai_INCLUDE_DIRS})
+  ${Xenomai_INCLUDE_DIRS}
+  ${Orocos-KDL_INCLUDE_DIRS})
 
 add_definitions(
   ${Eigen_DEFINITIONS}
@@ -41,9 +44,11 @@ orocos_component(barrett_hw_manager
   src/barrett_hw_manager.cpp)
 message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
 target_link_libraries(barrett_hw_manager
+  ${kdl_parser_LIBRARIES}
   ${urdf_LIBRARIES}
   ${USE_OROCOS_LIBRARIES}
-  ${BARRETT_LIBRARIES})
+  ${BARRETT_LIBRARIES}
+  ${Orocos-KDL_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)
   orocos_use_package(ocl-deployment)

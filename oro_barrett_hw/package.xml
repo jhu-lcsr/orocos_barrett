@@ -19,6 +19,8 @@
   <build_depend>rtt_sensor_msgs</build_depend>
   <build_depend>rtt_ros_tools</build_depend>
   <build_depend>angles</build_depend>
+  <build_depend>kdl</build_depend>
+  <build_depend>kdl_parser</build_depend>
 
   <run_depend>urdf</run_depend>
   <run_depend>barrett</run_depend>
@@ -27,6 +29,8 @@
   <run_depend>eigen_typekit</run_depend>
   <run_depend>rtt_sensor_msgs</run_depend>
   <run_depend>rtt_ros_tools</run_depend>
+  <run_depend>kdl</run_depend>
+  <run_depend>kdl_parser</run_depend>
 
   <export>
     <rtt_ros>
