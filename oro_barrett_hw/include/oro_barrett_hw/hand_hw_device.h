@@ -292,10 +292,8 @@ namespace oro_barrett_hw {
 
     joint_position_out.write(joint_position);
 
-#if 0
     this->computeCenterOfMass(center_of_mass);
     center_of_mass_out.write(center_of_mass);
-#endif
 
     // Publish state to ROS 
     if(this->joint_state_throttle.ready(0.02)) {

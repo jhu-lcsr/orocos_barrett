@@ -92,7 +92,8 @@ namespace oro_barrett_interface {
     std::vector<bool>
       joint_actuation;
 
-    KDL::Tree kdl_tree_;
+    KDL::Tree kdl_tree;
+    KDL::Frame base_to_parent_transform;
 
     // Joint state for active and passive joints
     Eigen::VectorXd
@@ -198,7 +199,8 @@ namespace oro_barrett_interface {
     //hand_service->addConstant("SPREAD",3);
 
     hand_service->addOperation("computeCenterOfMass", &HandDevice::computeCenterOfMass, this, RTT::OwnThread);
-    hand_service->addAttribute("center_of_mass",center_of_mass);
+    hand_service->addProperty("center_of_mass",center_of_mass)
+      .doc("Center of mass as (px,py,pz,m) of the hand in the parent of root frame of the hand (bhand_palm_link).");
 
     // Orocos ports
     hand_service->addPort("joint_torque_in",joint_torque_in)
@@ -211,7 +213,7 @@ namespace oro_barrett_interface {
       .doc("4-DOF command masked by pucks in trapezoidal joint position mode.");
 
     hand_service->addPort("center_of_mass_out",center_of_mass_out)
-      .doc("Center of mass as (px,py,pz,m) of the hand in the root frame of the hand (bhand_palm_link).");
+      .doc("Center of mass as (px,py,pz,m) of the hand in the parent of root frame of the hand (bhand_palm_link).");
 
     // ROS data ports
     hand_service->addPort("joint_cmd_in", joint_cmd_in)
@@ -257,10 +259,12 @@ namespace oro_barrett_interface {
 
     // Get the root link of the bhand
     KDL::SegmentMap::const_iterator bhand_palm_link = full_tree.getSegment(urdf_prefix+"/bhand_palm_link");
+    // Get the transform from the parent of the root link to the root link
+    base_to_parent_transform = bhand_palm_link->second.segment.getFrameToTip(); 
     // Create a KDL tree with the same root name as the actual hand
-    kdl_tree_ = KDL::Tree(urdf_prefix+"/bhand_palm_link");
+    kdl_tree = KDL::Tree(urdf_prefix+"/bhand_palm_link");
     // Get the bhand subtree
-    getSubtree(full_tree, bhand_palm_link, kdl_tree_);
+    getSubtree(full_tree, bhand_palm_link, kdl_tree);
     
     // Resize joint state
     joint_state.name.resize(8);
@@ -281,15 +285,15 @@ namespace oro_barrett_interface {
       KDL::Vector &total_xyz,
       double &total_m) 
   {
+    // Get the segment
     const KDL::Segment &segment = tree_elem.segment;
-    RTT::log(RTT::Debug) << "Adding mass from segment \"" << segment.getName() << "\""<< RTT::endlog();
+    //RTT::log(RTT::Debug) << "Adding mass from segment \"" << segment.getName() << "\""<< RTT::endlog();
 
     // Update frame
     const std::string &joint_name = segment.getJoint().getName();
-    //RTT::log(RTT::Debug) << "Adding mass from joint" << joint_name << RTT::endlog();
 
     frame = frame * segment.pose(q_map.find(joint_name)->second); 
-    RTT::log(RTT::Debug) << "Segment pose is: " << std::endl << frame << RTT::endlog();
+    //RTT::log(RTT::Debug) << "Segment pose is: " << std::endl << frame << RTT::endlog();
 
     // Get link center of gravity
     KDL::Vector link_xyz = segment.getInertia().getCOG();
@@ -334,7 +338,7 @@ namespace oro_barrett_interface {
     KDL::Vector total_xyz;
     double total_mass;
 
-    KDL::TreeElement root_element = kdl_tree_.getRootSegment()->second;
+    KDL::TreeElement root_element = kdl_tree.getRootSegment()->second;
     
     // Recurse through the tree
     computeCenterOfMassOfSubtree(
@@ -343,6 +347,9 @@ namespace oro_barrett_interface {
         q_map,
         total_xyz, 
         total_mass);
+
+    // Transform the location into the parent link
+    total_xyz = base_to_parent_transform * total_xyz;
 
     // Store the xyz,m
     xyzm[0] = total_xyz.x();
