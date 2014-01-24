@@ -25,6 +25,12 @@ namespace oro_barrett_hw {
     class WamHWDevice : public oro_barrett_interface::WamDevice<DOF>
   {
   public:
+
+    enum RunMode {
+      IDLE = 0,
+      RUN
+    };
+
     /** \brief Construct a low-level WAM interface and extract joint information from
      * the URDF.
      */
@@ -37,7 +43,8 @@ namespace oro_barrett_hw {
       oro_barrett_interface::WamDevice<DOF>(
           parent_service, 
           urdf_model, 
-          tip_joint_name)
+          tip_joint_name),
+      run_mode(IDLE)
     {
       // Wait for the wam
       barrett_manager->waitForWam(false);
@@ -66,7 +73,7 @@ namespace oro_barrett_hw {
       this->joint_resolver_ranges = (m_to_j_pos.diagonal().array() * 2.0*M_PI).cwiseAbs().matrix();
     }
 
-    virtual void calibrateNearHome()
+    virtual void initialize()
     {
       const Eigen::MatrixXd & mpos2jpos = interface->getMotorToJointPositionTransform();
 
@@ -77,9 +84,23 @@ namespace oro_barrett_hw {
 
       // Set the actual position
       interface->definePosition(actual_position);
-
+      
       // Disable resolver reading now that we've calibrated
       this->read_resolver = false;
+    }
+
+    virtual void run()
+    {
+      // Disable resolver reading 
+      this->read_resolver = false;
+      run_mode = RUN;
+    }
+
+    virtual void idle()
+    {
+      // Disable resolver reading 
+      this->read_resolver = true;
+      run_mode = IDLE;
     }
 
     virtual void readHW(RTT::Seconds time, RTT::Seconds period)
@@ -184,7 +205,9 @@ namespace oro_barrett_hw {
       }
 
       // Make sure the device is active
-      if(interface->getSafetyModule()->getMode(true) != barrett::SafetyModule::ACTIVE) { 
+      if(run_mode == IDLE || 
+         interface->getSafetyModule()->getMode(true) != barrett::SafetyModule::ACTIVE) 
+      { 
         // If it's not active, set the effort command to zero
         // TODO: When it changes, prevent command jumps
         this->joint_effort.setZero();
@@ -217,6 +240,7 @@ namespace oro_barrett_hw {
     //! libbarrett Interface
     boost::shared_ptr<barrett::LowLevelWam<DOF> > interface;
     std::vector<barrett::Puck*> wam_pucks;
+    RunMode run_mode;
   };
 
 }

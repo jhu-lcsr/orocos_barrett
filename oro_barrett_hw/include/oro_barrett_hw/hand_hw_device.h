@@ -44,10 +44,21 @@ namespace oro_barrett_hw {
         const std::string &urdf_prefix,
         boost::shared_ptr<barrett::ProductManager> barrett_manager);
 
-    enum Mode {
-      UNINITIALIZED = 0,
+    //! The update period during initialization
+    static const double INIT_UPDATE_PERIOD = 0.1;
+    //! The update period while running / idling
+    static const double RUN_UPDATE_PERIOD = 1.0/30.0;
+    
+    //! Number of pucks in the hand (4)
+    static const unsigned int N_PUCKS = barrett::Hand::DOF;
+
+    //! Maximum allowable hand puck temperature
+    static const double MAX_PUCK_TEMP = 65.0;
+
+    enum RunMode {
+      IDLE = 0,
       INITIALIZE,
-      RUN 
+      RUN
     };
 
     enum InitState {
@@ -72,8 +83,6 @@ namespace oro_barrett_hw {
       static const int CMD_HI = 13;
       //! Hand Move Command
       static const int CMD_M = 19;
-      //! Number of pucks in the hand
-      static const unsigned int N_PUCKS = barrett::Hand::DOF;
 
       HandInterface(const std::vector<barrett::Puck*>& pucks) :
         barrett::Hand(pucks)
@@ -178,13 +187,13 @@ namespace oro_barrett_hw {
             (j2pp.array() * jp.array()).matrix());
       }
     };
-      
+     
   private:
     //! Measured execution times
     RTT::Seconds last_read_time, last_write_time;
     //! Minimum execution period. This runs at 10Hz before hand initialization and 30Hz afterwards.
     RTT::Seconds min_period;
-    Mode mode;
+    RunMode run_mode;
     InitState init_state;
     const std::vector<barrett::Puck*>& pucks;
     HandInterface *interface;
@@ -199,6 +208,7 @@ namespace oro_barrett_hw {
     bool modes_changed;
 
     Eigen::VectorXd temperature;
+    void checkTemperature();
   };
 
   HandHWDevice::HandHWDevice(
@@ -212,8 +222,8 @@ namespace oro_barrett_hw {
         urdf_prefix),
     last_read_time(0.0),
     last_write_time(0.0),
-    min_period(0.1),
-    mode(UNINITIALIZED),
+    min_period(RUN_UPDATE_PERIOD),
+    run_mode(IDLE),
     pucks(barrett_manager->getHandPucks()),
     interface(new HandHWDevice::HandInterface(pucks)),
     mode_torque(0x0),
@@ -221,29 +231,29 @@ namespace oro_barrett_hw {
     mode_velocity(0x0),
     mode_trapezoidal(0x0),
     modes_changed(false),
-    temperature(4)
+    temperature(N_PUCKS)
   { 
     parent_service->provides("hand")->addProperty("temperature",temperature);
   }
 
   void HandHWDevice::initialize()
   {
-    mode = INITIALIZE;
+    min_period = INIT_UPDATE_PERIOD;
     init_state = INIT_FINGERS;
+    run_mode = INITIALIZE;
   }
 
   void HandHWDevice::idle()
   {
-    using namespace barrett;
-    interface->open(Hand::GRASP,false);
-    interface->close(Hand::SPREAD,false);
+    interface->open(barrett::Hand::GRASP,false);
+    interface->close(barrett::Hand::SPREAD,false);
     interface->idle();
+    run_mode = IDLE;
   }
 
   void HandHWDevice::run()
   {
-    mode = RUN;
-    min_period = 0.033;
+    run_mode = RUN;
   }
 
   void HandHWDevice::setCompliance(bool enable)
@@ -257,11 +267,9 @@ namespace oro_barrett_hw {
       return;
     }
 
+    // Check temperature
     interface->getTemp(temperature);
-
-    if(mode == UNINITIALIZED) {
-      return;
-    }
+    checkTemperature();
 
     // Poll the hardware
     try {
@@ -301,6 +309,17 @@ namespace oro_barrett_hw {
     last_read_time = time;
   }
 
+  void HandHWDevice::checkTemperature() 
+  {
+    const double max_temp = MAX_PUCK_TEMP;
+    if((temperature.array() > max_temp).any()) {
+      RTT::log(RTT::Error) << "DANGER: The BHand temperature has exceeded the safe maximum of "<<max_temp<<"C. The hand has been IDLE'd. Please turn off the robot and let it cool down." << RTT::endlog();
+      interface->idle();
+      run_mode = IDLE;
+      parent_service_->getOwner()->error();
+    }
+  }
+
   void HandHWDevice::writeHW(RTT::Seconds time, RTT::Seconds period)
   {
     // Don't run too fast
@@ -309,13 +328,11 @@ namespace oro_barrett_hw {
     }
 
     // Check temperature
-    if((temperature.array() > 65.0).any()) {
-      this->idle();
-      return;
-    }
+    checkTemperature();
 
-    switch(mode) {
-      case UNINITIALIZED:
+    switch(run_mode) {
+      case IDLE:
+        // Don't command the hand
         break;
       case INITIALIZE:
         {
@@ -344,9 +361,9 @@ namespace oro_barrett_hw {
               break;
             case INIT_CLOSE:
               // Increase loop rate
-              min_period = 0.033;
+              min_period = RUN_UPDATE_PERIOD;
               interface->close(Hand::GRASP,false);
-              mode = RUN;
+              run_mode = RUN;
               break;
           };
           break;
@@ -362,10 +379,10 @@ namespace oro_barrett_hw {
           bool new_joint_cmd = (joint_cmd_in.readNewest(joint_cmd) == RTT::NewData);
 
           // Check sizes
-          if(joint_torque_cmd.size() != 4 ||
-             joint_position_cmd.size() != 4 ||
-             joint_velocity_cmd.size() != 4 ||
-             joint_trapezoidal_cmd.size() != 4)
+          if(joint_torque_cmd.size() != N_PUCKS ||
+             joint_position_cmd.size() != N_PUCKS ||
+             joint_velocity_cmd.size() != N_PUCKS ||
+             joint_trapezoidal_cmd.size() != N_PUCKS)
           {
             RTT::log(RTT::Error) << "Input command size msimatch!" << RTT::endlog();
             return;
@@ -378,7 +395,7 @@ namespace oro_barrett_hw {
             joint_velocity_cmd.setZero();
             joint_trapezoidal_cmd.setZero();
 
-            for(unsigned int i=0; i<4; i++) {
+            for(unsigned int i=0; i<N_PUCKS; i++) {
               switch(joint_cmd.mode[i]) {
                 case oro_barrett_msgs::BHandCmd::MODE_TORQUE:
                   new_torque_cmd = true;

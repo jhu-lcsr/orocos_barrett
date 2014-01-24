@@ -28,8 +28,12 @@ namespace oro_barrett_interface {
     virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
     virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
-    //! Write the calibration command 
-    virtual void calibrateNearHome() = 0;
+    //! Write the calibration command when the wam is "near" the home position
+    virtual void initialize() = 0;
+    //! Switch out of calibration mode
+    virtual void run() = 0;
+    //! Switch disable commands to the wam
+    virtual void idle() = 0;
     //! The safety mode (IDLE/ACTIVE/ESTOP)
     virtual unsigned int getSafetyMode() = 0;
   };
@@ -101,8 +105,12 @@ namespace oro_barrett_interface {
       wam_service->addPort("joint_resolver_state_out", joint_resolver_state_out);
 
       // Operations
-      wam_service->addOperation("calibrateNearHome", &WamDevice::calibrateNearHome, this, RTT::OwnThread)
+      wam_service->addOperation("initialize", &WamDevice::initialize, this, RTT::OwnThread)
         .doc("Declare the actual position of the robot to be near the home position, so that it can home to actual zero");
+      wam_service->addOperation("run", &WamDevice::run, this, RTT::OwnThread)
+        .doc("Disable reading of additional data needed for calibration.");
+      wam_service->addOperation("idle", &WamDevice::idle, this, RTT::OwnThread)
+        .doc("Disable writing of commands and start reading additional data needed for calibration.");
 
       // Resize joint names
       joint_names.resize(DOF);
