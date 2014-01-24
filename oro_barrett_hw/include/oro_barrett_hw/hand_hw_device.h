@@ -243,7 +243,7 @@ namespace oro_barrett_hw {
   void HandHWDevice::run()
   {
     mode = RUN;
-    min_period = 0.33;
+    min_period = 0.033;
   }
 
   void HandHWDevice::setCompliance(bool enable)
@@ -287,7 +287,7 @@ namespace oro_barrett_hw {
     // Publish state to ROS 
     if(this->joint_state_throttle.ready(0.02)) {
       // Update the joint state message
-      this->joint_state.header.stamp = rtt_ros_tools::ros_rt_now();
+      this->joint_state.header.stamp = rtt_ros::clock::rtt_now();
       this->joint_state.name = this->joint_names;
       Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),8) = this->joint_position;
       Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),8) = this->joint_velocity;
