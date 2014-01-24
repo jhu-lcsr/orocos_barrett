@@ -263,6 +263,11 @@ namespace oro_barrett_hw {
 
   void HandHWDevice::readHW(RTT::Seconds time, RTT::Seconds period)
   {
+    // Always compute and write center of mass
+    this->computeCenterOfMass(center_of_mass);
+    center_of_mass_out.write(center_of_mass);
+
+    // Limit other oeprations
     if(time - last_read_time < min_period) {
       return;
     }
@@ -291,9 +296,6 @@ namespace oro_barrett_hw {
     joint_position.block<3,1>(5,0) = raw_outer_positions.block<3,1>(0,0);
 
     joint_position_out.write(joint_position);
-
-    this->computeCenterOfMass(center_of_mass);
-    center_of_mass_out.write(center_of_mass);
 
     // Publish state to ROS 
     if(this->joint_state_throttle.ready(0.02)) {
