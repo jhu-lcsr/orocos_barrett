@@ -11,6 +11,7 @@
 #include <sensor_msgs/JointState.h>
 
 #include <rtt_ros_tools/throttles.h>
+#include <rtt_rostopic/rostopic.h>
 
 #include <oro_barrett_msgs/BHandCmd.h>
 
@@ -18,9 +19,14 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/frames_io.hpp>
 
+#include <geometry_msgs/PoseStamped.h>
+
 namespace oro_barrett_interface {
 
-  void getSubtree(const KDL::Tree &tree, KDL::SegmentMap::const_iterator subroot, KDL::Tree &subtree)
+  void getSubtree(
+      const KDL::Tree &tree,
+      KDL::SegmentMap::const_iterator subroot,
+      KDL::Tree &subtree)
   {
     const std::string element_name = subroot->first;
     const KDL::TreeElement element = subroot->second;
@@ -34,7 +40,11 @@ namespace oro_barrett_interface {
       const std::string child_name = (*it)->first;
       const KDL::TreeElement child = (*it)->second;
 
-      RTT::log(RTT::Debug) << "Adding segment " <<child_name<< " to parent "<< element_name <<RTT::endlog();
+      RTT::log(RTT::Debug) 
+        << "Adding segment " <<child_name
+        << " to parent "<< element_name 
+        << " with transform: " 
+        << RTT::endlog();
 
       // Add this segment to the subtree
       subtree.addSegment(child.segment, element_name); 
@@ -85,6 +95,7 @@ namespace oro_barrett_interface {
 
     //! \name Configuration & State
     //\{
+    KDL::Tree full_tree;
     //! The names of all the joints
     std::vector<std::string> 
       joint_names;
@@ -92,6 +103,7 @@ namespace oro_barrett_interface {
     std::vector<bool>
       joint_actuation;
 
+    std::string urdf_prefix;
     KDL::Tree kdl_tree;
     KDL::Frame base_to_parent_transform;
 
@@ -104,6 +116,9 @@ namespace oro_barrett_interface {
       joint_velocity_cmd,
       joint_trapezoidal_cmd,
       center_of_mass;
+
+    std::map<std::string, double> q_map;
+    geometry_msgs::PoseStamped com_msg;
 
     Eigen::VectorXi
       knuckle_torque;
@@ -135,6 +150,8 @@ namespace oro_barrett_interface {
       center_of_mass_out;
     RTT::OutputPort<sensor_msgs::JointState >
       joint_state_out;
+    RTT::OutputPort<geometry_msgs::PoseStamped>
+      center_of_mass_debug_out;
     //\}
 
     rtt_ros_tools::PeriodicThrottle joint_state_throttle;
@@ -146,10 +163,12 @@ namespace oro_barrett_interface {
   HandDevice::HandDevice(
         RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
-        const std::string &urdf_prefix) :
+        const std::string &urdf_prefix_) :
     parent_service_(parent_service),
 
     joint_actuation(8),
+
+    urdf_prefix(urdf_prefix_),
 
     joint_position(8),
     joint_velocity(8),
@@ -200,7 +219,7 @@ namespace oro_barrett_interface {
 
     hand_service->addOperation("computeCenterOfMass", &HandDevice::computeCenterOfMass, this, RTT::OwnThread);
     hand_service->addProperty("center_of_mass",center_of_mass)
-      .doc("Center of mass as (px,py,pz,m) of the hand in the parent of root frame of the hand (bhand_palm_link).");
+      .doc("Center of mass as (px,py,pz,m) of the hand in the parent of the root frame of the hand (bhand_palm_link).");
 
     // Orocos ports
     hand_service->addPort("joint_torque_in",joint_torque_in)
@@ -220,6 +239,14 @@ namespace oro_barrett_interface {
       .doc("4-DOF command and command modes. This command overrides the four mode input ports.");
     hand_service->addPort("joint_state_out", joint_state_out)
       .doc("The full (actuated and underactuated) 8-DOF joint state.");
+    hand_service->addPort("center_of_mass_debug_out",center_of_mass_debug_out)
+      .doc("Center of mass pose.");
+    
+    // Get an instance of the rtt_rostopic service requester
+    rtt_rostopic::ROSTopic rostopic;
+
+    // Add the port and stream it to a ROS topic
+    center_of_mass_debug_out.createStream(rostopic.connection("~/"+parent_service->getOwner()->getName()+"/hand/center_of_mass"));
 
     using namespace boost::assign;
     joint_names.clear();
@@ -249,7 +276,6 @@ namespace oro_barrett_interface {
     }
 
     // Extract the KDL tree from the URDF
-    KDL::Tree full_tree;
     if (!kdl_parser::treeFromUrdfModel(urdf_model, full_tree)){
       std::ostringstream oss;
       oss << "Failed to construct kdl tree";
@@ -260,11 +286,13 @@ namespace oro_barrett_interface {
     // Get the root link of the bhand
     KDL::SegmentMap::const_iterator bhand_palm_link = full_tree.getSegment(urdf_prefix+"/bhand_palm_link");
     // Get the transform from the parent of the root link to the root link
-    base_to_parent_transform = bhand_palm_link->second.segment.getFrameToTip(); 
+    base_to_parent_transform = bhand_palm_link->second.segment.pose(0); 
     // Create a KDL tree with the same root name as the actual hand
     kdl_tree = KDL::Tree(urdf_prefix+"/bhand_palm_link");
     // Get the bhand subtree
     getSubtree(full_tree, bhand_palm_link, kdl_tree);
+
+    com_msg.header.frame_id = full_tree.getSegment(urdf_prefix+"/bhand_palm_link")->second.parent->second.segment.getName();
     
     // Resize joint state
     joint_state.name.resize(8);
@@ -280,34 +308,22 @@ namespace oro_barrett_interface {
 
   void computeCenterOfMassOfSubtree(
       KDL::Frame frame,
-      const KDL::TreeElement &tree_elem,
+      KDL::SegmentMap::const_iterator root,
       const std::map<std::string, double> &q_map,
-      KDL::Vector &total_xyz,
-      double &total_m) 
+      KDL::RigidBodyInertia &total_inertia) 
   {
     // Get the segment
-    const KDL::Segment &segment = tree_elem.segment;
     //RTT::log(RTT::Debug) << "Adding mass from segment \"" << segment.getName() << "\""<< RTT::endlog();
-
-    // Update frame
+    const KDL::TreeElement &tree_elem = root->second;
+    const KDL::Segment &segment = tree_elem.segment;
     const std::string &joint_name = segment.getJoint().getName();
 
+    // Accumulate inertia
+    total_inertia = total_inertia + (frame*segment.getInertia());
+
+    // Update frame
     frame = frame * segment.pose(q_map.find(joint_name)->second); 
-    //RTT::log(RTT::Debug) << "Segment pose is: " << std::endl << frame << RTT::endlog();
-
-    // Get link center of gravity
-    KDL::Vector link_xyz = segment.getInertia().getCOG();
-    // Transform the center of gravity in this link to the base link
-    link_xyz = frame*link_xyz;
     
-    // Get link mass
-    const double link_m = segment.getInertia().getMass();
-
-    // Update the center of mass of this link
-    total_xyz = (total_m*total_xyz + link_m*link_xyz) / (total_m + link_m);
-    // Update the total mass with the mass of this link
-    total_m += link_m;
-
     // Recurse on each child
     std::vector<KDL::SegmentMap::const_iterator>::const_iterator it;
     for(it = tree_elem.children.begin();
@@ -317,10 +333,9 @@ namespace oro_barrett_interface {
       // it is of type std::pair<std::string, KDL::TreeElement>**
       computeCenterOfMassOfSubtree(
           frame,
-          (*it)->second,
+          *it,
           q_map,
-          total_xyz,
-          total_m);
+          total_inertia);
     }
   }
 
@@ -329,33 +344,30 @@ namespace oro_barrett_interface {
     // Make sure xyzm is the right size
     xyzm.resize(4);
 
-    // Construct joint name->position map;
-    std::map<std::string, double> q_map;
+    // Update joint name->position map;
     for(int i=0; i < 8; i++) {
-      q_map[joint_names[i]] = joint_position[i];
+      this->q_map[joint_names[i]] = joint_position[i];
     }
 
-    KDL::Vector total_xyz;
-    double total_mass;
+    KDL::RigidBodyInertia total_inertia;
 
-    KDL::TreeElement root_element = kdl_tree.getRootSegment()->second;
+    KDL::SegmentMap::const_iterator root_element = kdl_tree.getRootSegment();
     
     // Recurse through the tree
     computeCenterOfMassOfSubtree(
         KDL::Frame::Identity(), 
         root_element, 
         q_map,
-        total_xyz, 
-        total_mass);
+        total_inertia);
 
     // Transform the location into the parent link
-    total_xyz = base_to_parent_transform * total_xyz;
+    total_inertia = base_to_parent_transform * total_inertia;
 
     // Store the xyz,m
-    xyzm[0] = total_xyz.x();
-    xyzm[1] = total_xyz.y();
-    xyzm[2] = total_xyz.z();
-    xyzm[3] = total_mass;
+    xyzm[0] = total_inertia.getCOG().x();
+    xyzm[1] = total_inertia.getCOG().y();
+    xyzm[2] = total_inertia.getCOG().z();
+    xyzm[3] = total_inertia.getMass();
   }
 }
 

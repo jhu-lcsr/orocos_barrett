@@ -300,7 +300,7 @@ namespace oro_barrett_hw {
     // Publish state to ROS 
     if(this->joint_state_throttle.ready(0.02)) {
       // Update the joint state message
-      this->joint_state.header.stamp = rtt_ros::clock::rtt_now();
+      this->joint_state.header.stamp = rtt_rosclock::host_rt_now();
       this->joint_state.name = this->joint_names;
       Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),8) = this->joint_position;
       Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),8) = this->joint_velocity;
@@ -309,6 +309,14 @@ namespace oro_barrett_hw {
 
       // Publish
       this->joint_state_out.write(this->joint_state);
+
+      // Create a pose structure from the center of mass
+      com_msg.header.stamp = rtt_rosclock::host_rt_now();
+      com_msg.pose.position.x = center_of_mass[0];
+      com_msg.pose.position.y = center_of_mass[1];
+      com_msg.pose.position.z = center_of_mass[2];
+      this->center_of_mass_debug_out.write(com_msg);
+
     }
 
     last_read_time = time;

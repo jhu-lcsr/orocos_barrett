@@ -12,7 +12,7 @@
 
 #include <sensor_msgs/JointState.h>
 
-#include <rtt_ros/clock.h>
+#include <rtt_rosclock/rtt_rosclock.h>
 
 #include <angles/angles.h>
 
@@ -149,7 +149,7 @@ namespace oro_barrett_hw {
       // Publish state to ROS 
       if(this->joint_state_throttle.ready(0.02)) {
         // Update the joint state message
-        this->joint_state.header.stamp = rtt_ros::clock::rtt_now();
+        this->joint_state.header.stamp = rtt_rosclock::host_rt_now();
         this->joint_state.name = this->joint_names;
         Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),DOF) = this->joint_position;
         Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),DOF) = this->joint_velocity;
@@ -167,7 +167,7 @@ namespace oro_barrett_hw {
           }
           
           // Update the joint state message
-          this->joint_resolver_state.header.stamp = rtt_ros::clock::rtt_now();
+          this->joint_resolver_state.header.stamp = rtt_rosclock::host_rt_now();
           this->joint_resolver_state.name = this->joint_names;
           Eigen::Map<Eigen::VectorXd>(this->joint_resolver_state.position.data(),DOF) = this->joint_resolver_offset;
 

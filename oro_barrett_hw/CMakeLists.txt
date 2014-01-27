@@ -32,7 +32,8 @@ include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${BARRETT_INCLUDE_DIRS}
   ${Xenomai_INCLUDE_DIRS}
-  ${Orocos-KDL_INCLUDE_DIRS})
+  ${Orocos-KDL_INCLUDE_DIRS}
+  ${USE_OROCOS_INCLUDE_DIRS})
 
 add_definitions(
   ${Eigen_DEFINITIONS}
