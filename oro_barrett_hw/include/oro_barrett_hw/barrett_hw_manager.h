@@ -52,10 +52,8 @@ namespace oro_barrett_hw {
 
     /** \brief Construct a WAM robot interface
      *
-     * TODO: Add 4-DOF support
      */
-    virtual bool configureWam4(const std::string &urdf_prefix)
-    { return false; }
+    virtual bool configureWam4(const std::string &urdf_prefix);
 
     /** \brief Construct a WAM robot interface
      *

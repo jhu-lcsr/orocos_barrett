@@ -40,7 +40,7 @@ bool BarrettHWManager::configureHook()
     if(!barrett_manager_) {
       barrett_manager_.reset(
           new barrett::ProductManager(
-            config_path_.length() > 0 ? config_path_.c_str() : NULL /* Use defailt config */,
+            config_path_.c_str(),
             bus_manager_.get()));
     }
 
@@ -190,6 +190,29 @@ void BarrettHWManager::cleanupHook()
   bus_manager_.reset();
 }
 
+bool BarrettHWManager::configureWam4(const std::string &urdf_prefix)
+{
+  // Make sure we 're in the configured state, and not running
+  if(!this->isConfigured() || this->isRunning()) {
+    RTT::log(RTT::Error) << "Cannot configure WAM while the component is "
+      "unconfigured or running." << RTT::endlog();
+    return false;
+  }
+
+  // Check for a 4-DOF WAM
+  if(!barrett_manager_->foundWam4()) {
+    RTT::log(RTT::Error) << "Could not find a requested 4-DOF WAM on bus" <<
+      bus_id_ << "." << RTT::endlog();
+    return false;
+  }
+
+  // Create a new 7-DOF WAM
+  if(!this->configureWam<4>(urdf_prefix)) {
+    return false;
+  }
+
+  return true;
+}
 bool BarrettHWManager::configureWam7(const std::string &urdf_prefix)
 {
   // Make sure we 're in the configured state, and not running
@@ -208,6 +231,7 @@ bool BarrettHWManager::configureWam7(const std::string &urdf_prefix)
 
   // Create a new 7-DOF WAM
   if(!this->configureWam<7>(urdf_prefix)) {
+    this->provides()->removeService("wam");
     return false;
   }
 
@@ -222,6 +246,7 @@ bool BarrettHWManager::configureWam(const std::string &urdf_prefix)
   try{
     // Construct a new wam device and "wam" service (interface and state storage)
     if(!wam_device_) {
+      RTT::log(RTT::Info) << "Configuring " <<DOF<<"-DOF WAM from configuration file: \""<<((config_path_.length() > 0) ? config_path_ : std::string("default.cfg") )<<"\"" << RTT::endlog();
       wam_device_.reset(
           new WamHWDevice<DOF>(
             this->provides(),
@@ -231,8 +256,9 @@ bool BarrettHWManager::configureWam(const std::string &urdf_prefix)
             barrett_manager_->getConfig().lookup(barrett_manager_->getWamDefaultConfigPath())));
     }
   } catch(std::runtime_error &ex) {
-    RTT::log(RTT::Error) << "Could not configure " << DOF << "-DOF WAM: " <<
+    RTT::log(RTT::Error) << "Could not configure " << DOF << "-DOF WAM from configuration file : \""<<((config_path_.length() > 0) ? config_path_ : std::string("default.cfg") )<<"\"" <<
       ex.what() << RTT::endlog();
+    wam_device_.reset();
     return false;
   }
 

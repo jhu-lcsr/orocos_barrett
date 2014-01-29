@@ -125,8 +125,13 @@ namespace oro_barrett_interface {
       joint_resolver_state.position.resize(DOF);
 
       // Get URDF links starting at product tip link
-      const std::string tip_joint_name = urdf_prefix+"/palm_yaw_joint"; 
+      const std::string tip_joint_name = (DOF == 7) ? (urdf_prefix+"/palm_yaw_joint") : (urdf_prefix+"/elbow_pitch_joint"); 
       boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint_name);
+
+      // Make sure we get the tip joint
+      if(!joint) {
+        throw std::runtime_error("Could not get tip joint for WAM!");
+      }
 
       // Get joint information starting at the tip (this way we're robust to
       // branching in the kinematic tree)

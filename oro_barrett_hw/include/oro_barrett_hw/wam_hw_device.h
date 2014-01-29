@@ -204,6 +204,25 @@ namespace oro_barrett_hw {
         this->joint_effort.setZero();
       }
 
+      this->joint_effort_out.write(this->joint_effort);
+
+      for(size_t i=0; i<DOF; i++) {
+        // Check if the joint effort st
+        if(std::abs(this->joint_effort(i)) > this->joint_effort_limits[i]) {
+          if(this->warning_count == 0) {
+            // This warning can kill heartbeats
+            RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
+              << ") of joint (" << i << ") exceeded safety limits! They have "
+              "been truncated to: +/- " << this->joint_effort_limits[i] << RTT::endlog();
+          }
+          this->warning_count++;
+          // Truncate this joint torque
+          this->joint_effort(i) = std::max(
+              std::min(this->joint_effort(i), this->joint_effort_limits[i]),
+              -1.0*this->joint_effort_limits[i]);
+        }
+      }
+
       // Make sure the device is active
       if(run_mode == IDLE || 
          interface->getSafetyModule()->getMode(true) != barrett::SafetyModule::ACTIVE) 
@@ -211,25 +230,6 @@ namespace oro_barrett_hw {
         // If it's not active, set the effort command to zero
         // TODO: When it changes, prevent command jumps
         this->joint_effort.setZero();
-      }
-
-      for(size_t i=0; i<DOF; i++) {
-        // Check if the joint effort st
-        if(std::abs(this->joint_effort(i)) > this->joint_effort_limits[i]) {
-          this->warning_count++;
-          if(this->warning_count % 1000 == 0) {
-            // This warning can kill heartbeats
-            /*
-             *RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
-             *  << ") of joint (" << i << ") exceeded safety limits! They have "
-             *  "been truncated to: +/- " << this->joint_effort_limits[i] << RTT::endlog();
-             */
-          }
-          // Truncate this joint torque
-          this->joint_effort(i) = std::max(
-              std::min(this->joint_effort(i), this->joint_effort_limits[i]),
-              -1.0*this->joint_effort_limits[i]);
-        }
       }
 
       // Set the torques

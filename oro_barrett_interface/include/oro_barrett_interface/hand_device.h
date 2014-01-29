@@ -158,6 +158,8 @@ namespace oro_barrett_interface {
 
     //! Compute the hand center of mass
     void computeCenterOfMass(Eigen::VectorXd &xyzm);
+    void computeCenterOfMassDebug();
+    void computeCenterOfMass(Eigen::VectorXd &xyzm, bool debug);
   };
 
   HandDevice::HandDevice(
@@ -217,7 +219,8 @@ namespace oro_barrett_interface {
     //hand_service->addConstant("F3",2);
     //hand_service->addConstant("SPREAD",3);
 
-    hand_service->addOperation("computeCenterOfMass", &HandDevice::computeCenterOfMass, this, RTT::OwnThread);
+    hand_service->addOperation("computeCenterOfMass", (void (HandDevice::*)(Eigen::VectorXd&))&HandDevice::computeCenterOfMass, this, RTT::OwnThread);
+    hand_service->addOperation("computeCenterOfMassDebug", &HandDevice::computeCenterOfMassDebug, this, RTT::OwnThread);
     hand_service->addProperty("center_of_mass",center_of_mass)
       .doc("Center of mass as (px,py,pz,m) of the hand in the parent of the root frame of the hand (bhand_palm_link).");
 
@@ -284,15 +287,15 @@ namespace oro_barrett_interface {
     }
 
     // Get the root link of the bhand
-    KDL::SegmentMap::const_iterator bhand_palm_link = full_tree.getSegment(urdf_prefix+"/bhand_palm_link");
+    KDL::SegmentMap::const_iterator bhand_parent_link = full_tree.getSegment(urdf_prefix+"/bhand_palm_link")->second.parent;
     // Get the transform from the parent of the root link to the root link
-    base_to_parent_transform = bhand_palm_link->second.segment.pose(0); 
+    base_to_parent_transform = full_tree.getSegment(urdf_prefix+"/bhand_palm_link")->second.segment.pose(0); 
     // Create a KDL tree with the same root name as the actual hand
-    kdl_tree = KDL::Tree(urdf_prefix+"/bhand_palm_link");
+    kdl_tree = KDL::Tree(bhand_parent_link->first);
     // Get the bhand subtree
-    getSubtree(full_tree, bhand_palm_link, kdl_tree);
+    getSubtree(full_tree, bhand_parent_link, kdl_tree);
 
-    com_msg.header.frame_id = full_tree.getSegment(urdf_prefix+"/bhand_palm_link")->second.parent->second.segment.getName();
+    com_msg.header.frame_id = bhand_parent_link->first;
     
     // Resize joint state
     joint_state.name.resize(8);
@@ -310,20 +313,25 @@ namespace oro_barrett_interface {
       KDL::Frame frame,
       KDL::SegmentMap::const_iterator root,
       const std::map<std::string, double> &q_map,
-      KDL::RigidBodyInertia &total_inertia) 
+      KDL::RigidBodyInertia &total_inertia,
+      bool debug) 
   {
     // Get the segment
-    //RTT::log(RTT::Debug) << "Adding mass from segment \"" << segment.getName() << "\""<< RTT::endlog();
     const KDL::TreeElement &tree_elem = root->second;
     const KDL::Segment &segment = tree_elem.segment;
     const std::string &joint_name = segment.getJoint().getName();
-
-    // Accumulate inertia
-    total_inertia = total_inertia + (frame*segment.getInertia());
-
+    
     // Update frame
     frame = frame * segment.pose(q_map.find(joint_name)->second); 
-    
+
+    // Accumulate inertia
+    const KDL::RigidBodyInertia &link_inertia = frame*segment.getInertia();
+    total_inertia = total_inertia + link_inertia;
+
+    if(debug) {
+      RTT::log(RTT::Debug) << "Adding mass from segment \"" << segment.getName() << "\" (" << link_inertia.getCOG() << ", " << link_inertia.getMass() << ")"<< RTT::endlog();
+    }
+
     // Recurse on each child
     std::vector<KDL::SegmentMap::const_iterator>::const_iterator it;
     for(it = tree_elem.children.begin();
@@ -335,11 +343,24 @@ namespace oro_barrett_interface {
           frame,
           *it,
           q_map,
-          total_inertia);
+          total_inertia,
+          debug);
     }
   }
 
   void HandDevice::computeCenterOfMass(Eigen::VectorXd &xyzm)
+  {
+    this->computeCenterOfMass(xyzm, false);
+  }
+
+  void HandDevice::computeCenterOfMassDebug()
+  {
+    Eigen::VectorXd xyzm;
+    this->computeCenterOfMass(xyzm, true);
+    RTT::log(RTT::Debug) << "Mass (x,y,z,m): \n" <<xyzm << RTT::endlog();
+  }
+
+  void HandDevice::computeCenterOfMass(Eigen::VectorXd &xyzm, bool debug)
   {
     // Make sure xyzm is the right size
     xyzm.resize(4);
@@ -358,10 +379,11 @@ namespace oro_barrett_interface {
         KDL::Frame::Identity(), 
         root_element, 
         q_map,
-        total_inertia);
+        total_inertia,
+        debug);
 
     // Transform the location into the parent link
-    total_inertia = base_to_parent_transform * total_inertia;
+    //total_inertia = base_to_parent_transform * total_inertia;
 
     // Store the xyz,m
     xyzm[0] = total_inertia.getCOG().x();
