@@ -24,6 +24,17 @@ about its contents.
 
 These packages require Orocos and rtt_ros_integration version 2.7 or greater.
 
+## Theory of Operation
+
+Since this set of Orocos components uses `libbarrett`, it's designed with the same
+concepts in mind. For example, the `oro_barrett_hw::BarrettHWManager` corresponds 
+to a `libbarrett::ProductManager` and its associated CANBus. As such, this manager
+is used to configure and instantiate different products on that bus, like a WAM
+or BHand. These products then appear as RTT services of the manager.
+
+Both the hand and the arm must be initialized if they are being brought up for the
+first time (see below for more detail). Once they have been
+
 ## Building
 
 Building the rtt\_barrett packages from source is most easily done with a pair
