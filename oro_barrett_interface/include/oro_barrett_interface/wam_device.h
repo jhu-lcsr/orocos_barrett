@@ -81,10 +81,6 @@ namespace oro_barrett_interface {
       joint_resolver_offset(DOF),
       joint_calibration_burn_offsets(DOF),
 
-      interpolate_effort(false),
-      interpolation_scale(0.0),
-      interpolation_time(5.0),
-
       // Throttles
       joint_state_throttle(0.01),
 
@@ -92,14 +88,15 @@ namespace oro_barrett_interface {
       warning_count(DOF),
 
       // Modes
-      safety_mode(0)
+      safety_mode(0),
+      last_safety_mode(0)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
       wam_service->doc("Barrett WAM robot interface");
 
       // Properties
+      wam_service->addProperty("velocity_smoothing_factor",velocity_smoothing_factor);
       wam_service->addProperty("warning_fault_ratio",warning_fault_ratio);
-      wam_service->addProperty("interpolation_time",interpolation_time);
       wam_service->addProperty("home_position",joint_home_position);
       wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset);
       wam_service->addProperty("read_resolver",read_resolver);
@@ -246,6 +243,7 @@ namespace oro_barrett_interface {
     RTT::Service::shared_ptr parent_service_;
 
     // Configuration
+    double velocity_smoothing_factor;
     double warning_fault_ratio;
     bool read_resolver;
     std::vector<std::string> 
@@ -287,12 +285,6 @@ namespace oro_barrett_interface {
 
     //\}
     
-    //! Interpolation state
-    bool interpolate_effort;
-    double 
-      interpolation_scale,
-      interpolation_time;
-
     //! \name Input ports
     //\{
     RTT::InputPort<JointspaceVector >
@@ -326,6 +318,7 @@ namespace oro_barrett_interface {
 
     std::vector<int> warning_count;
     unsigned int safety_mode;
+    unsigned int last_safety_mode;
   };
 }
 

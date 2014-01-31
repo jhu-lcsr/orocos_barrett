@@ -95,8 +95,6 @@ namespace oro_barrett_hw {
       // Disable resolver reading 
       this->read_resolver = false;
       if(run_mode != RUN) {
-        this->interpolate_effort = true;
-        this->interpolation_scale = 0.0;
         run_mode = RUN;
       }
     }
@@ -116,6 +114,7 @@ namespace oro_barrett_hw {
         interface->update();
         // Get the safety module status
         if (interface->getSafetyModule() != NULL) {
+          this->last_safety_mode = this->safety_mode;
           this->safety_mode = interface->getSafetyModule()->getMode(true);
         }
       } catch (const std::runtime_error& e) {
@@ -135,17 +134,12 @@ namespace oro_barrett_hw {
       Eigen::Matrix<double,DOF,1> raw_joint_position = interface->getJointPositions();
       Eigen::Matrix<double,DOF,1> raw_joint_velocity = interface->getJointVelocities();
 
-      // Smooth velocity 
-      // TODO: parameterize time constant
-      for(size_t i=0; i<DOF; i++) {
-        this->joint_velocity(i) = filters::exponentialSmoothing(
-            raw_joint_velocity(i),
-            this->joint_velocity(i),
-            0.5);
-      }
+      // Exponentially smooth velocity 
+      this->joint_velocity = 
+        this->velocity_smoothing_factor*this->joint_velocity 
+        + (1.0 - this->velocity_smoothing_factor)*raw_joint_velocity;
 
       // Store position
-      // TODO: add internal calibration offsets
       this->joint_position = raw_joint_position;
 
       // Write to data ports
@@ -210,30 +204,41 @@ namespace oro_barrett_hw {
         this->joint_effort_raw.setZero();
       }
 
-      // Copy the raw input to the joint effor that we'll filter
-      if(run_mode == RUN && 
-         interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ACTIVE)  
-      {
+      switch(run_mode) {
+        case RUN:
+          switch(this->safety_mode) {
+            case barrett::SafetyModule::ACTIVE:
+              // Copy the raw input to the joint effor that we'll filter
+              this->joint_effort = this->joint_effort_raw;
+              break;
+            case barrett::SafetyModule::IDLE:
+              // If the safety mode was just switched from active to idle, run a software idle
+              if(this->last_safety_mode == barrett::SafetyModule::ACTIVE) {
+                this->idle();
+              };
+              // Set the effort command to zero
+              this->joint_effort.setZero();
+              break;
+            case barrett::SafetyModule::ESTOP:
+              // Set the effort command to zero
+              this->joint_effort.setZero();
+              break;
+          };
 
-        this->joint_effort = this->joint_effort_raw;
-#if 0
-        if(this->interpolate_effort) {
-          this->joint_effort = this->joint_effort_last + this->interpolation_scale * (this->joint_effort_raw - this->joint_effort_last);
-          this->interpolation_scale = std::min(1.0,std::max(0.0,(this->interpolation_scale*this->interpolation_time + period)/this->interpolation_time));
+          break;
 
-          if(fabs(this->interpolation_scale-1.0) < 1E-6) {
-            this->interpolate_effort = false;
-            this->interpolation_scale = 0.0;
-          }
-        }
-#endif
-      } else { 
-        if(run_mode != IDLE) {
-          this->idle();
-        }
-        // If it's idled or not active, set the effort command to zero
-        this->joint_effort.setZero();
-      }
+        case IDLE:
+          switch(this->safety_mode) {
+            case barrett::SafetyModule::ACTIVE:
+            case barrett::SafetyModule::IDLE:
+            case barrett::SafetyModule::ESTOP:
+              // If it's idled or not active, set the effort command to zero
+              this->joint_effort.setZero();
+              break;
+          };
+
+          break;
+      };
 
 
       // Check effort limits
