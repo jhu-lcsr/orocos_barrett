@@ -9,6 +9,13 @@
 
 #include <urdf/model.h>
 
+#include <kdl/jntarray.hpp>
+#include <kdl/tree.hpp>
+#include <kdl/chain.hpp>
+#include <kdl/chaindynparam.hpp>
+
+#include <kdl_parser/kdl_parser.hpp>
+
 #include <rtt_ros_tools/throttles.h>
 
 #include <sensor_msgs/JointState.h>
@@ -52,6 +59,7 @@ namespace oro_barrett_interface {
         const std::string &urdf_prefix) :
       parent_service_(parent_service),
 
+      warning_fault_ratio(0.66),
       read_resolver(false),
 
       // Data members
@@ -60,10 +68,16 @@ namespace oro_barrett_interface {
       joint_resolver_ranges(DOF),
       joint_effort_limits(DOF),
       joint_velocity_limits(DOF),
+
+      kdl_chain(),
+      chain_dynamics(),
       
       joint_position(DOF),
       joint_velocity(DOF),
+      joint_acceleration(DOF),
       joint_effort(DOF),
+      joint_effort_raw(DOF),
+      joint_effort_last(DOF),
       joint_resolver_offset(DOF),
       joint_calibration_burn_offsets(DOF),
 
@@ -71,7 +85,7 @@ namespace oro_barrett_interface {
       joint_state_throttle(0.01),
 
       // Counters
-      warning_count(0),
+      warning_count(DOF),
 
       // Modes
       safety_mode(0)
@@ -80,11 +94,15 @@ namespace oro_barrett_interface {
       wam_service->doc("Barrett WAM robot interface");
 
       // Properties
+      wam_service->addProperty("warning_fault_ratio",warning_fault_ratio);
       wam_service->addProperty("home_position",joint_home_position);
       wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset);
-      wam_service->addProperty("effort",joint_effort);
       wam_service->addProperty("read_resolver",read_resolver);
-      wam_service->addProperty("warning_count",warning_count);
+
+      // Attributes
+      wam_service->addAttribute("effort_raw",joint_effort_raw);
+      wam_service->addAttribute("effort",joint_effort);
+      wam_service->addAttribute("warning_count",warning_count);
 
       // Data ports
       wam_service->addPort("effort_in", joint_effort_in);
@@ -160,6 +178,27 @@ namespace oro_barrett_interface {
         joint_effort_limits(jid) = joint->limits->effort;
         joint_velocity_limits(jid) = joint->limits->velocity;
       }
+
+      // Get a KDL tree from the urdf
+      if(!kdl_parser::treeFromUrdfModel(urdf_model, kdl_tree)){
+        std::ostringstream oss;
+        RTT::log(RTT::Error) << "Failed to construct KDL tree!" << RTT::endlog();
+        throw std::runtime_error(oss.str());
+      } 
+
+      // Get a KDL chain for the arm
+      if(!kdl_tree.getChain(
+          kdl_tree.getRootSegment()->first, 
+          urdf_model.getJoint(tip_joint_name)->child_link_name,
+          kdl_chain)) {
+        std::ostringstream oss;
+        RTT::log(RTT::Error) << "Failed to extract KDL chain!" << RTT::endlog();
+        throw std::runtime_error(oss.str());
+      }
+
+      // Construct a KDL chain dynamics solver
+      chain_dynamics.reset(new KDL::ChainDynParam(kdl_chain, KDL::Vector(0,0,0)));
+
     }
 
     //! Removes the added "wam" service 
@@ -174,6 +213,8 @@ namespace oro_barrett_interface {
       joint_position.setZero();
       joint_velocity.setZero();
       joint_effort.setZero();
+      joint_effort_last.setZero();
+      joint_effort_raw.setZero();
       joint_resolver_offset.setZero();
       joint_calibration_burn_offsets.setZero();
     }
@@ -193,12 +234,14 @@ namespace oro_barrett_interface {
 
     //! Jointspace vector type for convenience
     typedef Eigen::VectorXd JointspaceVector;
+    typedef Eigen::Matrix<bool, Eigen::Dynamic, 1> JointspaceFlagArray;
 
   protected:
     //! RTT Service for WAM interfaces
     RTT::Service::shared_ptr parent_service_;
 
     // Configuration
+    double warning_fault_ratio;
     bool read_resolver;
     std::vector<std::string> 
       joint_names;
@@ -207,7 +250,13 @@ namespace oro_barrett_interface {
       joint_home_resolver_offset,
       joint_resolver_ranges,
       joint_effort_limits,
-      joint_velocity_limits;
+      joint_velocity_limits,
+      joint_acceleration_limits;
+
+    //! Joint Chain Dynamics Solver
+    KDL::Tree kdl_tree;
+    KDL::Chain kdl_chain;
+    boost::scoped_ptr<KDL::ChainDynParam> chain_dynamics;
 
     //! \name State
     //\{
@@ -216,12 +265,20 @@ namespace oro_barrett_interface {
       //joint_offsets,
       joint_position,
       joint_velocity,
+      joint_acceleration,
       joint_effort,
+      joint_effort_raw,
+      joint_effort_last,
       joint_resolver_offset,
       joint_calibration_burn_offsets;
     sensor_msgs::JointState
       joint_resolver_state,
       joint_state;
+
+    JointspaceVector
+      joint_effort_over_limits;
+    JointspaceFlagArray
+      joint_effort_limits_violated;
 
     //\}
 
@@ -256,7 +313,7 @@ namespace oro_barrett_interface {
     
     rtt_ros_tools::PeriodicThrottle joint_state_throttle;
 
-    unsigned long warning_count;
+    std::vector<int> warning_count;
     unsigned int safety_mode;
   };
 }

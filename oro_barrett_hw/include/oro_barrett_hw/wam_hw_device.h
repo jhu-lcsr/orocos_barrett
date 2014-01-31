@@ -44,6 +44,7 @@ namespace oro_barrett_hw {
           parent_service, 
           urdf_model, 
           tip_joint_name),
+      barrett_manager_(barrett_manager),
       run_mode(IDLE)
     {
       // Wait for the wam
@@ -101,6 +102,8 @@ namespace oro_barrett_hw {
       // Disable resolver reading 
       this->read_resolver = true;
       run_mode = IDLE;
+      interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
+      interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
     }
 
     virtual void readHW(RTT::Seconds time, RTT::Seconds period)
@@ -190,36 +193,46 @@ namespace oro_barrett_hw {
         if(!new_effort_cmd) {
           return;
         }
-
+      
         // Make sure the effort command is the right size
         if(joint_effort_tmp.size() == (unsigned)DOF) {
-          this->joint_effort = joint_effort_tmp;
+          this->joint_effort_raw = joint_effort_tmp;
         } else {
-          this->joint_effort.setZero();
+          this->joint_effort_raw.setZero();
         }
 
       } else {
         // Not connected, zero the command
-        this->joint_effort.resize(DOF);
-        this->joint_effort.setZero();
+        this->joint_effort_raw.resize(DOF);
+        this->joint_effort_raw.setZero();
       }
 
-      this->joint_effort_out.write(this->joint_effort);
+      // Copy the raw input to the joint effor that we'll filter
+      this->joint_effort = this->joint_effort_raw;
 
+      // Check effort limits
       for(size_t i=0; i<DOF; i++) {
-        // Check if the joint effort st
-        if(std::abs(this->joint_effort(i)) > this->joint_effort_limits[i]) {
-          if(this->warning_count == 0) {
+        // Check if the joint effort is too high
+        if(std::abs(this->joint_effort(i)) > this->warning_fault_ratio*this->joint_effort_limits[i]) {
+          if(this->warning_count[i] % 1000 == 0) {
             // This warning can kill heartbeats
             RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
-              << ") of joint (" << i << ") exceeded safety limits! They have "
-              "been truncated to: +/- " << this->joint_effort_limits[i] << RTT::endlog();
+              << ") of joint (" << i << ") is within "<<(1.0-this->warning_fault_ratio)
+              <<"\% of safety limit: " << this->joint_effort_limits[i] << RTT::endlog();
           }
-          this->warning_count++;
-          // Truncate this joint torque
-          this->joint_effort(i) = std::max(
-              std::min(this->joint_effort(i), this->joint_effort_limits[i]),
-              -1.0*this->joint_effort_limits[i]);
+          this->warning_count[i]++;
+
+          // Check for fault
+          if(std::abs(this->joint_effort(i)) > this->joint_effort_limits[i]) {
+            RTT::log(RTT::Error) << "Commanded torque (" << this->joint_effort(i)
+              << ") of joint (" << i << ") has exceeded safety limit: "
+              << this->joint_effort_limits[i] << RTT::endlog();
+            this->joint_effort.setZero();
+            if(interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ACTIVE) {
+              this->parent_service_->getOwner()->error();
+              return;
+            }
+          }
         }
       }
 
@@ -234,12 +247,19 @@ namespace oro_barrett_hw {
 
       // Set the torques
       interface->setTorques(this->joint_effort);
+
+      // Save the last effort command
+      this->joint_effort_last = this->joint_effort;
+
+      // Pass along commanded effort for anyone who cares
+      this->joint_effort_out.write(this->joint_effort);
     }
 
   protected:
     //! libbarrett Interface
     boost::shared_ptr<barrett::LowLevelWam<DOF> > interface;
     std::vector<barrett::Puck*> wam_pucks;
+    boost::shared_ptr<barrett::ProductManager> barrett_manager_;
     RunMode run_mode;
   };
 
