@@ -94,7 +94,11 @@ namespace oro_barrett_hw {
     {
       // Disable resolver reading 
       this->read_resolver = false;
-      run_mode = RUN;
+      if(run_mode != RUN) {
+        this->interpolate_effort = true;
+        this->interpolation_scale = 0.0;
+        run_mode = RUN;
+      }
     }
 
     virtual void idle()
@@ -102,8 +106,7 @@ namespace oro_barrett_hw {
       // Disable resolver reading 
       this->read_resolver = true;
       run_mode = IDLE;
-      interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
-      interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
+      //interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
     }
 
     virtual void readHW(RTT::Seconds time, RTT::Seconds period)
@@ -208,7 +211,30 @@ namespace oro_barrett_hw {
       }
 
       // Copy the raw input to the joint effor that we'll filter
-      this->joint_effort = this->joint_effort_raw;
+      if(run_mode == RUN && 
+         interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ACTIVE)  
+      {
+
+        this->joint_effort = this->joint_effort_raw;
+#if 0
+        if(this->interpolate_effort) {
+          this->joint_effort = this->joint_effort_last + this->interpolation_scale * (this->joint_effort_raw - this->joint_effort_last);
+          this->interpolation_scale = std::min(1.0,std::max(0.0,(this->interpolation_scale*this->interpolation_time + period)/this->interpolation_time));
+
+          if(fabs(this->interpolation_scale-1.0) < 1E-6) {
+            this->interpolate_effort = false;
+            this->interpolation_scale = 0.0;
+          }
+        }
+#endif
+      } else { 
+        if(run_mode != IDLE) {
+          this->idle();
+        }
+        // If it's idled or not active, set the effort command to zero
+        this->joint_effort.setZero();
+      }
+
 
       // Check effort limits
       for(size_t i=0; i<DOF; i++) {
@@ -234,15 +260,6 @@ namespace oro_barrett_hw {
             }
           }
         }
-      }
-
-      // Make sure the device is active
-      if(run_mode == IDLE || 
-         interface->getSafetyModule()->getMode(true) != barrett::SafetyModule::ACTIVE) 
-      { 
-        // If it's not active, set the effort command to zero
-        // TODO: When it changes, prevent command jumps
-        this->joint_effort.setZero();
       }
 
       // Set the torques

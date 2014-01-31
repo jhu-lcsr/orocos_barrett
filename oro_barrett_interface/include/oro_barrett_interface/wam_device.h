@@ -81,6 +81,10 @@ namespace oro_barrett_interface {
       joint_resolver_offset(DOF),
       joint_calibration_burn_offsets(DOF),
 
+      interpolate_effort(false),
+      interpolation_scale(0.0),
+      interpolation_time(5.0),
+
       // Throttles
       joint_state_throttle(0.01),
 
@@ -95,6 +99,7 @@ namespace oro_barrett_interface {
 
       // Properties
       wam_service->addProperty("warning_fault_ratio",warning_fault_ratio);
+      wam_service->addProperty("interpolation_time",interpolation_time);
       wam_service->addProperty("home_position",joint_home_position);
       wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset);
       wam_service->addProperty("read_resolver",read_resolver);
@@ -281,6 +286,12 @@ namespace oro_barrett_interface {
       joint_effort_limits_violated;
 
     //\}
+    
+    //! Interpolation state
+    bool interpolate_effort;
+    double 
+      interpolation_scale,
+      interpolation_time;
 
     //! \name Input ports
     //\{
