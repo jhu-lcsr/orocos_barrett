@@ -95,11 +95,16 @@ namespace oro_barrett_interface {
       wam_service->doc("Barrett WAM robot interface");
 
       // Properties
-      wam_service->addProperty("velocity_smoothing_factor",velocity_smoothing_factor);
-      wam_service->addProperty("warning_fault_ratio",warning_fault_ratio);
-      wam_service->addProperty("home_position",joint_home_position);
-      wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset);
-      wam_service->addProperty("read_resolver",read_resolver);
+      wam_service->addProperty("velocity_smoothing_factor",velocity_smoothing_factor)
+        .doc("The coefficient used for exponentially smoothing the velocity estimate.");
+      wam_service->addProperty("warning_fault_ratio",warning_fault_ratio)
+        .doc("The ratio of any given safety limit which should precipitate a warning.");
+      wam_service->addProperty("home_position",joint_home_position)
+        .doc("The joint-space calibration position of the robot.");
+      wam_service->addProperty("home_resolver_offset",joint_home_resolver_offset)
+        .doc("The motor-space encoder offsets when it is precisely at the home position.");
+      wam_service->addProperty("read_resolver",read_resolver)
+        .doc("Read the absolute value of the encoders (this slows down execution time).");
 
       // Attributes
       wam_service->addAttribute("effort_raw",joint_effort_raw);
