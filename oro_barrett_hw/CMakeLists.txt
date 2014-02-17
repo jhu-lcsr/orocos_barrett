@@ -25,14 +25,14 @@ find_package(OROCOS-RTT REQUIRED)
 include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 find_package(Xenomai REQUIRED)
 find_package(barrett REQUIRED)
-find_package(Orocos-KDL REQUIRED)
+find_package(orocos_kdl REQUIRED)
 
 include_directories(include 
   ${Eigen_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   ${BARRETT_INCLUDE_DIRS}
   ${Xenomai_INCLUDE_DIRS}
-  ${Orocos-KDL_INCLUDE_DIRS}
+  ${orocos_kdl_INCLUDE_DIRS}
   ${USE_OROCOS_INCLUDE_DIRS})
 
 add_definitions(
@@ -49,7 +49,7 @@ target_link_libraries(barrett_hw_manager
   ${urdf_LIBRARIES}
   ${USE_OROCOS_LIBRARIES}
   ${BARRETT_LIBRARIES}
-  ${Orocos-KDL_LIBRARIES})
+  ${orocos_kdl_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)
   orocos_use_package(ocl-deployment)

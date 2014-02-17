@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   oro_barrett_msgs)
 
 find_package(barrett)
-find_package(Orocos-KDL)
+find_package(orocos_kdl)
 
 catkin_package(
   INCLUDE_DIRS include
