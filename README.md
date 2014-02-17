@@ -26,14 +26,41 @@ These packages require Orocos and rtt_ros_integration version 2.7 or greater.
 
 ## Theory of Operation
 
-Since this set of Orocos components uses `libbarrett`, it's designed with the same
-concepts in mind. For example, the `oro_barrett_hw::BarrettHWManager` corresponds 
-to a `libbarrett::ProductManager` and its associated CANBus. As such, this manager
-is used to configure and instantiate different products on that bus, like a WAM
-or BHand. These products then appear as RTT services of the manager.
+Since this set of Orocos components uses `libbarrett`, it's designed with the
+same concepts in mind. For example, the `oro_barrett_hw::BarrettHWManager`
+corresponds to a `libbarrett::ProductManager` and its associated CANBus. As
+such, this manager is used to configure and instantiate different products on
+that bus, like a WAM or BHand. These products then appear as RTT services of
+the manager.
 
-Both the hand and the arm must be initialized if they are being brought up for the
-first time (see below for more detail). Once they have been
+### Soft Running and Idling
+
+Both the hand and the arm must be initialized if they are being brought up for
+the first time (see below for more detail). Before they are initialized, they
+will still query the hardware for device state. Once they have been
+initialized, they can be `run`. Once the system is activated via the control
+pendant, they will send commands to their respective devices. 
+
+At any point, the WAM can be *soft-idled* which will cause it to stop sending
+effort commands. This is not the ideal way to start and stop the robot,
+however, because it will also stop compensating for gravity. It is better to
+*hard-idle* the robot via the control pendant.
+
+Once the robot has been *hard-idled*, it will automatically *soft-idle* and
+before it will begin sending commands again, it must be *soft-run*.
+
+### Safety Features
+
+The Orocos Barrett WAM abstraction includes both velocity and effort limits per
+joint. If at any point any one joint velocity exceeds its velocity limit or the
+commanded effort exceeds its effort limit, the Barrett manager component will
+zero the effort command, stop running, and enter the RTT Error state. This will
+terminate the sending of joint commands and trigger an E-STOP on the Barrett
+Safety System. Once this happens, the robot must be re-set.
+
+In addition to these limits, there is a scalar warning ratio such that any
+velocities or efforts which exceed that ratio of the limit will prompt a
+warning as often as once per second.
 
 ## Building
 
