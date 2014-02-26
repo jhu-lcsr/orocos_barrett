@@ -3,14 +3,16 @@ project(oro_barrett_interface)
 
 find_package(catkin REQUIRED COMPONENTS
   rtt_ros
-  oro_barrett_msgs)
+  rtt_oro_barrett_msgs)
 
 find_package(barrett)
 find_package(orocos_kdl)
 
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES oro_barrett_interface
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+  CATKIN_DEPENDS rtt_oro_barrett_msgs
 )
+
+orocos_generate_package(
+  DEPENDS rtt_oro_barrett_msgs
+  )

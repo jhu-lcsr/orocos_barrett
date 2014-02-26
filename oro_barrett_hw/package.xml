@@ -45,7 +45,7 @@
       <plugin_depend>rtt_rosparam</plugin_depend>
       <plugin_depend>rtt_sensor_msgs</plugin_depend>
       <plugin_depend>rtt_geometry_msgs</plugin_depend>
-      <plugin_depend>oro_barrett_msgs</plugin_depend>
+      <plugin_depend>oro_barrett_interface</plugin_depend>
     </rtt_ros>
   </export>
 </package>

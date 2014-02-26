@@ -10,9 +10,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>oro_barrett_msgs</build_depend>
-  <run_depend>oro_barrett_msgs</run_depend>
+  <build_depend>rtt_oro_barrett_msgs</build_depend>
+  <run_depend>rtt_oro_barrett_msgs</run_depend>
 
-  <build_depend>rtt_rostopic</build_depend>
-  <run_depend>rtt_rostopic</run_depend>
+  <export>
+    <rtt_ros>
+      <plugin_depend>rtt_oro_barrett_msgs</plugin_depend>
+    </rtt_ros>
+  </export>
 </package>

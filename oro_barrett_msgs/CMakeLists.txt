@@ -2,19 +2,17 @@ cmake_minimum_required(VERSION 2.8.3)
 project(oro_barrett_msgs)
 
 find_package(catkin REQUIRED COMPONENTS 
-  rtt_roscomm std_msgs message_generation)
+  std_msgs message_generation)
 
 add_message_files(
   FILES
   BHandCmd.msg)
-generate_messages()
+generate_messages(
+  DEPENDENCIES
+  std_msgs)
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS message_runtime
+  )
 
-# Generate typekits for ros .msg files
-ros_generate_rtt_typekit(oro_barrett_msgs)
-# Generate the plugin which makes the services in my_msgs available
-ros_generate_rtt_service_proxies(oro_barrett_msgs)
-
-orocos_generate_package()
 

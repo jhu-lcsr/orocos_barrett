@@ -22,10 +22,11 @@ catkin_package(
 
 find_package(Eigen REQUIRED)
 find_package(OROCOS-RTT REQUIRED)
-include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 find_package(Xenomai REQUIRED)
 find_package(barrett REQUIRED)
 find_package(orocos_kdl REQUIRED)
+
+include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 
 include_directories(include 
   ${Eigen_INCLUDE_DIRS}
