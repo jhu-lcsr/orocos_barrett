@@ -1,0 +1,21 @@
+<launch>
+  <include file="$(find rtt_ros)/launch/deployer.launch">
+    <arg name="NAME" value="barrett"/>
+    <arg name="DEPLOYER_ARGS" value="-s $(find oro_barrett_hw)/test/idle_test.ops"/>
+    <arg name="LOG_LEVEL" value="debug"/>
+    <arg name="DEBUG" value="false"/>
+  </include>
+
+  <group ns="barrett/barrett_hw_manager">
+    <param name="bus_id" value="0"/>
+  </group>
+
+  <param name="robot_description" command="$(find xacro)/xacro.py
+    '$(find barrett_model)/robots/wam_7dof_wam.urdf.xacro'" />
+
+  <node pkg="robot_state_publisher" type="robot_state_publisher"
+    name="wam_state_publisher">
+    <param name="publish_frequency" value="50"/>
+    <remap from="joint_states" to="wam_joint_states"/>
+  </node>
+</launch>

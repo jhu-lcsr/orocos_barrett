@@ -106,8 +106,8 @@ namespace oro_barrett_hw {
       //interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
     }
 
-    virtual void readHW(RTT::Seconds time, RTT::Seconds period)
-    {
+    virtual void readDevice() 
+    { 
       // Poll the hardware
       try {
         interface->update();
@@ -140,6 +140,12 @@ namespace oro_barrett_hw {
 
       // Store position
       this->joint_position = raw_joint_position;
+
+    }
+
+    virtual void readHW(RTT::Seconds time, RTT::Seconds period)
+    {
+      this->readDevice();
 
       // Write to data ports
       this->joint_position_out.write(this->joint_position);
@@ -267,7 +273,7 @@ namespace oro_barrett_hw {
       }
 
       // Set the torques
-      interface->setTorques(this->joint_effort);
+      this->writeDevice();
 
       // Save the last effort command
       this->joint_effort_last = this->joint_effort;
@@ -275,6 +281,13 @@ namespace oro_barrett_hw {
       // Pass along commanded effort for anyone who cares
       this->joint_effort_out.write(this->joint_effort);
     }
+
+    virtual void writeDevice() 
+    { 
+      // Set the torques
+      interface->setTorques(this->joint_effort);
+    }
+
 
   protected:
     //! libbarrett Interface
