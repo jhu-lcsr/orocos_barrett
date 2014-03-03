@@ -8,8 +8,6 @@
 
 #include <oro_barrett_interface/wam_device.h>
 
-#include <control_toolbox/filters.h>
-
 #include <sensor_msgs/JointState.h>
 
 #include <rtt_rosclock/rtt_rosclock.h>
@@ -37,13 +35,13 @@ namespace oro_barrett_hw {
     WamHWDevice(
         RTT::Service::shared_ptr parent_service, 
         const urdf::Model &urdf_model,
-        const std::string &tip_joint_name,
+        const std::string &urdf_prefix,
         boost::shared_ptr<barrett::ProductManager> barrett_manager,
         const libconfig::Setting &wam_config) :
       oro_barrett_interface::WamDevice<DOF>(
           parent_service, 
           urdf_model, 
-          tip_joint_name),
+          urdf_prefix),
       barrett_manager_(barrett_manager),
       run_mode(IDLE)
     {
@@ -104,6 +102,7 @@ namespace oro_barrett_hw {
       // Disable resolver reading 
       this->read_resolver = true;
       run_mode = IDLE;
+      // The following doesn't work as intended for some reason
       //interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
     }
 

@@ -20,6 +20,8 @@
 
 #include <sensor_msgs/JointState.h>
 
+#include <boost/scoped_ptr.hpp>
+
 namespace oro_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.

@@ -20,43 +20,49 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-find_package(Eigen REQUIRED)
-find_package(OROCOS-RTT REQUIRED)
-find_package(Xenomai REQUIRED)
-find_package(barrett REQUIRED)
-find_package(orocos_kdl REQUIRED)
+find_package(barrett)
+find_package(Xenomai)
 
-include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
+if(barrett_FOUND AND Xenomai_FOUND)
 
-include_directories(include 
-  ${Eigen_INCLUDE_DIRS}
-  ${catkin_INCLUDE_DIRS}
-  ${BARRETT_INCLUDE_DIRS}
-  ${Xenomai_INCLUDE_DIRS}
-  ${orocos_kdl_INCLUDE_DIRS}
-  ${USE_OROCOS_INCLUDE_DIRS})
+  find_package(Eigen REQUIRED)
+  find_package(OROCOS-RTT REQUIRED)
+  find_package(orocos_kdl REQUIRED)
 
-add_definitions(
-  ${Eigen_DEFINITIONS}
-  ${BARRETT_DEFINITIONS})
+  include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 
-link_directories(${BARRETT_LIBRARY_DIRS})
+  include_directories(include 
+    ${Eigen_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
+    ${BARRETT_INCLUDE_DIRS}
+    ${Xenomai_INCLUDE_DIRS}
+    ${orocos_kdl_INCLUDE_DIRS}
+    ${USE_OROCOS_INCLUDE_DIRS})
 
-orocos_component(barrett_hw_manager
-  src/barrett_hw_manager.cpp)
-message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
-target_link_libraries(barrett_hw_manager
-  ${kdl_parser_LIBRARIES}
-  ${urdf_LIBRARIES}
-  ${USE_OROCOS_LIBRARIES}
-  ${BARRETT_LIBRARIES}
-  ${orocos_kdl_LIBRARIES})
+  add_definitions(
+    ${Eigen_DEFINITIONS}
+    ${BARRETT_DEFINITIONS})
 
-if(CATKIN_ENABLE_TESTING)
-  orocos_use_package(ocl-deployment)
-  orocos_use_package(ocl-taskbrowser)
-  #orocos_executable(idle_test
-    #test/idle_test.cpp)
+  link_directories(${BARRETT_LIBRARY_DIRS})
+
+  orocos_component(barrett_hw_manager
+    src/barrett_hw_manager.cpp)
+  message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
+  target_link_libraries(barrett_hw_manager
+    ${kdl_parser_LIBRARIES}
+    ${urdf_LIBRARIES}
+    ${USE_OROCOS_LIBRARIES}
+    ${BARRETT_LIBRARIES}
+    ${orocos_kdl_LIBRARIES})
+
+  if(CATKIN_ENABLE_TESTING)
+    orocos_use_package(ocl-deployment)
+    orocos_use_package(ocl-taskbrowser)
+    #orocos_executable(idle_test
+      #test/idle_test.cpp)
+  endif()
+
+  orocos_generate_package()
+else()
+  message(WARNING "libbarret or xenomai could not be found, so oro_barrett_hw is not being built.")
 endif()
-
-orocos_generate_package()
