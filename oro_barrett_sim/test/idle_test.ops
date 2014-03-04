@@ -1,9 +1,9 @@
 
 import("rtt_ros");
-ros.import("rtt_rosparam");
 ros.import("oro_barrett_sim");
 
-loadComponent("barrett_manager","oro_barrett_sim::BarrettSimManager");
+// Loaded in plugin
+//loadComponent("barrett_manager","oro_barrett_sim::BarrettSimManager");
 setActivity("barrett_manager",0.001,LowestPriority,ORO_SCHED_OTHER)
 loadService("barrett_manager","rosparam");
 
@@ -23,7 +23,7 @@ barrett_manager.wam.home_position[5] = -1.5708;
 barrett_manager.wam.home_position[6] = 1.5708;
 
 /* Publish joint state to ROS */
-stream("barrett_manager.wam.joint_state_out",rostopic.connection("joint_states"));
+stream("barrett_manager.wam.joint_state_out",ros.topic("joint_states"));
 
 barrett_manager.start();
 

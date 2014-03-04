@@ -56,6 +56,8 @@ void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model)
 
 bool BarrettSimManager::configureHook()
 {
+  RTT::Logger::Instance()->in("BarrettSimManager::configureHook");
+
   // Make sure the gazebo hook has been configured
   if(!gazebo_model_) {
     RTT::log(RTT::Error) << "No gazebo model defined." << RTT::endlog();
@@ -215,6 +217,13 @@ bool BarrettSimManager::configureWam(const std::string &urdf_prefix)
     joints[j] = gazebo_model_->GetJoint(urdf_prefix + wam_joint_names[j]);
     if(!joints[j]) {
       RTT::log(RTT::Error) << "Could not find joint \"" << urdf_prefix+wam_joint_names[j] <<"\" in URDF/SDF"<<RTT::endlog();
+
+      RTT::log(RTT::Error) << "Joints are:" << RTT::endlog();
+      const std::vector<gazebo::physics::JointPtr> &joints = gazebo_model_->GetJoints();
+      for(unsigned ja=0; ja<joints.size(); ja++) {
+        RTT::log(RTT::Error) << " -- " << joints[ja]->GetName() << RTT::endlog();
+      }
+
       return false;
     }
   }
