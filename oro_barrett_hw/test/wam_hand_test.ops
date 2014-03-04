@@ -2,15 +2,15 @@
 import("rtt_ros");
 ros.import("oro_barrett_hw");
 
-loadComponent("barrett_hw_manager","oro_barrett_hw::BarrettHWManager");
-setActivity("barrett_hw_manager",0.001,HighestPriority,ORO_SCHED_RT)
-loadService("barrett_hw_manager","rosparam");
+loadComponent("barrett_manager","oro_barrett_hw::BarrettHWManager");
+setActivity("barrett_manager",0.001,HighestPriority,ORO_SCHED_RT)
+loadService("barrett_manager","rosparam");
 
-barrett_hw_manager.rosparam.getAll();
-barrett_hw_manager.rosparam.getAbsolute("robot_description");
+barrett_manager.rosparam.getAll();
+barrett_manager.rosparam.getAbsolute("robot_description");
 
-barrett_hw_manager.configure();
-barrett_hw_manager.configureWam7("wam");
-barrett_hw_manager.configureHand("wam/bhand");
-barrett_hw_manager.start();
+barrett_manager.configure();
+barrett_manager.configureWam7("wam");
+barrett_manager.configureHand("wam/bhand");
+barrett_manager.start();
 

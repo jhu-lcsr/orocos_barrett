@@ -28,7 +28,7 @@ int ORO_main(int argc, char** argv) {
   {
     OCL::DeploymentComponent deployer("Deployer");
     deployer.import("oro_barrett_hw");
-    deployer.loadComponent("barrett_hw_manager","oro_barrett_hw::BarrettHWManager");
+    deployer.loadComponent("barrett_manager","oro_barrett_hw::BarrettHWManager");
 
     OCL::TaskBrowser task_browser(&deployer);
 
