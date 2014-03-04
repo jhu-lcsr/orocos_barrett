@@ -9,7 +9,6 @@ find_package(catkin REQUIRED
   kdl_parser
   rtt_ros
   rtt_ros_tools
-  rtt_sensor_msgs
   angles
   )
 

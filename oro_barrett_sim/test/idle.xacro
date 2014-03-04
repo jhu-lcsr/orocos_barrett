@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="sevenbot">
+
+  <!-- Gazebo Plugin -->
+  <gazebo>
+    <plugin name="rtt_gazebo" filename="librtt_gazebo_deployer.so">
+      <component>
+        <package>oro_barrett_sim</package>
+        <type>oro_barrett_sim::BarrettSimManager</type>
+        <name>barrett_manager</name>
+      </component>
+      <opsScriptFile>$(find oro_barrett_sim)/test/idle_test.ops</opsScriptFile>
+    </plugin>
+  </gazebo>
+
+  <!-- Includea all the WAM stuff -->
+  <include filename="$(find barrett_model)/models/wam_top.urdf.xacro"/>
+
+  <!-- Root link is in the world frame-->
+  <link name = "world"/>
+
+  <xacro:wam_7dof prefix="wam" parent_link="world" xyz="0.02 0.46 1" rpy="0 0 0" />
+
+</robot>

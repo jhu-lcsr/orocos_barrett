@@ -9,15 +9,8 @@ find_package(catkin REQUIRED
   kdl_parser
   rtt_ros
   rtt_ros_tools
-  rtt_sensor_msgs
   angles
   )
-
-catkin_package(
-  INCLUDE_DIRS include
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
-)
 
 find_package(Eigen REQUIRED)
 find_package(OROCOS-RTT REQUIRED)
@@ -55,4 +48,4 @@ if(CATKIN_ENABLE_TESTING)
     #test/idle_test.cpp)
 endif()
 
-orocos_generate_package()
+orocos_generate_package(INCLUDE_DIRS include)

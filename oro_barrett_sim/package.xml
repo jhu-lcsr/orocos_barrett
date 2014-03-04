@@ -19,6 +19,7 @@
   <build_depend>rtt_geometry_msgs</build_depend>
   <build_depend>rtt_ros_tools</build_depend>
   <build_depend>rtt_rosclock</build_depend>
+  <build_depend>rtt_ros</build_depend>
   <build_depend>angles</build_depend>
   <build_depend>kdl</build_depend>
   <build_depend>kdl_parser</build_depend>
@@ -34,6 +35,7 @@
   <run_depend>rtt_ros_tools</run_depend>
   <run_depend>rtt_rosclock</run_depend>
   <run_depend>rtt_roscomm</run_depend>
+  <run_depend>rtt_ros</run_depend>
   <run_depend>gazebo</run_depend>
 
   <run_depend>kdl</run_depend>
@@ -41,11 +43,9 @@
 
   <export>
     <rtt_ros>
-      <plugin_depend>eigen_typekit</plugin_depend>
       <plugin_depend>rtt_rosparam</plugin_depend>
       <plugin_depend>rtt_sensor_msgs</plugin_depend>
       <plugin_depend>rtt_geometry_msgs</plugin_depend>
-      <plugin_depend>oro_barrett_interface</plugin_depend>
     </rtt_ros>
   </export>
 </package>

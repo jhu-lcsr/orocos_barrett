@@ -30,6 +30,8 @@ BarrettSimManager::BarrettSimManager(const std::string &name) :
 //! Called from gazebo
 bool BarrettSimManager::gazeboConfigureHook(gazebo::physics::ModelPtr model)
 {
+  RTT::log(RTT::Info) << "Configuring Barrett manager from Gazebo Model..." << RTT::endlog();
+
   if(model.get() == NULL) {
     RTT::log(RTT::Error) << "Barrett Gazebo Model was null." << RTT::endlog();  
     return false;
