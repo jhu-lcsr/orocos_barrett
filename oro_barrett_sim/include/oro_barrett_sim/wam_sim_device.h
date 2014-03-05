@@ -50,10 +50,13 @@ namespace oro_barrett_sim {
     }
 
     virtual void initialize()
-    { }
+    {
+      RTT::log(RTT::Info) << "Initializing simulated WAM." << RTT::endlog();
+    }
 
     virtual void run()
     {
+      RTT::log(RTT::Info) << "Running simulated WAM." << RTT::endlog();
       if(run_mode != RUN) {
         run_mode = RUN;
       }
@@ -61,6 +64,7 @@ namespace oro_barrett_sim {
 
     virtual void idle()
     {
+      RTT::log(RTT::Info) << "Idling simulated WAM." << RTT::endlog();
       run_mode = IDLE;
     }
 
@@ -176,7 +180,7 @@ namespace oro_barrett_sim {
               << this->joint_effort_limits[i] << RTT::endlog();
             this->joint_effort.setZero();
             if(run_mode == RUN) {
-              this->parent_service_->getOwner()->error();
+              //this->parent_service_->getOwner()->error();
               return;
             }
           }

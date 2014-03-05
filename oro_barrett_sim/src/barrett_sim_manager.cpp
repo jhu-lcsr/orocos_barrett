@@ -46,7 +46,10 @@ bool BarrettSimManager::gazeboConfigureHook(gazebo::physics::ModelPtr model)
 //! Called from Gazebo
 void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model) 
 {
-  if(model.get() == NULL) {return;}
+  if(!model) {
+    RTT::log(RTT::Error) << "BarrettSimManager::gazeboUpdateHook called with null model." << RTT::endlog();
+    return;
+  }
 
   if(wam_device_) {
     wam_device_->readDevice();
