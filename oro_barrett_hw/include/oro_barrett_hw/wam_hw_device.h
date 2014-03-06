@@ -143,7 +143,7 @@ namespace oro_barrett_hw {
 
     }
 
-    virtual void readHW(RTT::Seconds time, RTT::Seconds period)
+    virtual void readHW(ros::Time time, RTT::Seconds period)
     {
       this->readDevice();
 
@@ -183,7 +183,7 @@ namespace oro_barrett_hw {
       }
     }
 
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period)
+    virtual void writeHW(ros::Time time, RTT::Seconds period)
     {
       // Check if the effort command port is connected
       if(this->joint_effort_in.connected()) {

@@ -35,14 +35,14 @@ namespace oro_barrett_interface {
     virtual void readConfig() = 0;
 
     //! Read the device state
-    virtual void readDevice() = 0;
+    virtual void readDevice(ros::Time time, RTT::Seconds period) = 0;
     //! Write the device command
-    virtual void writeDevice() = 0;
+    virtual void writeDevice(ros::Time time, RTT::Seconds period) = 0;
 
     //! Read the hardware state and publish it
-    virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
+    virtual void readHW(ros::Time time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
+    virtual void writeHW(ros::Time time, RTT::Seconds period) = 0;
 
     //! Write the calibration command when the wam is "near" the home position
     virtual void initialize() = 0;

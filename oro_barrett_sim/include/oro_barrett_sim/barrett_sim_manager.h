@@ -90,7 +90,10 @@ namespace oro_barrett_sim {
 #endif
     //\}
 
-    RTT::Seconds last_update_time_;
+    ros::Time last_gz_update_time_;
+    RTT::Seconds gz_period_;
+
+    ros::Time last_update_time_;
     RTT::Seconds period_;
     RTT::Seconds read_duration_;
     RTT::Seconds write_duration_;

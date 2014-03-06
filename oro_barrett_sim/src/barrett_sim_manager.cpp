@@ -46,15 +46,21 @@ bool BarrettSimManager::gazeboConfigureHook(gazebo::physics::ModelPtr model)
 //! Called from Gazebo
 void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model) 
 {
+  ros::Time gz_time = rtt_rosclock::rtt_now();
+  RTT::Seconds gz_period = (gz_time - last_gz_update_time_).toSec();
+  gz_period_ = gz_period;
+
   if(!model) {
     RTT::log(RTT::Error) << "BarrettSimManager::gazeboUpdateHook called with null model." << RTT::endlog();
     return;
   }
 
   if(wam_device_) {
-    wam_device_->readDevice();
-    wam_device_->writeDevice();
+    wam_device_->readDevice(gz_time, gz_period);
+    wam_device_->writeDevice(gz_time, gz_period);
   }
+
+  last_gz_update_time_ = gz_time;
 }
 
 bool BarrettSimManager::configureHook()
@@ -78,8 +84,7 @@ bool BarrettSimManager::configureHook()
 bool BarrettSimManager::startHook()
 {
   // Initialize the last update time
-  last_update_time_ = 
-    RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
+  last_update_time_ = rtt_rosclock::rtt_now();
 
   // Read the state configuration
   try {
@@ -101,8 +106,8 @@ bool BarrettSimManager::startHook()
 
 void BarrettSimManager::updateHook()
 {
-  RTT::Seconds time = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
-  RTT::Seconds period = time - last_update_time_;
+  ros::Time time = rtt_rosclock::rtt_now();
+  RTT::Seconds period = (time - last_update_time_).toSec();
   period_ = period;
 
   // Read

@@ -71,8 +71,7 @@ bool BarrettHWManager::configureHook()
 bool BarrettHWManager::startHook()
 {
   // Initialize the last update time
-  last_update_time_ = 
-    RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
+  last_update_time_ = rtt_rosclock::rtt_now();
 
   // Initialize the hand
   if(hand_device_) {
@@ -106,8 +105,8 @@ bool BarrettHWManager::startHook()
 
 void BarrettHWManager::updateHook()
 {
-  RTT::Seconds time = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
-  RTT::Seconds period = time - last_update_time_;
+  ros::Time time = rtt_rosclock::rtt_now();
+  RTT::Seconds period = (time - last_update_time_).toSec();
   period_ = period;
 
   // Read
