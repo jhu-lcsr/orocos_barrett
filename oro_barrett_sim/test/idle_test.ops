@@ -1,10 +1,13 @@
 
 import("rtt_ros");
 ros.import("oro_barrett_sim");
+ros.import("rtt_rosclock");
 
 // Loaded in plugin
 //loadComponent("barrett_manager","oro_barrett_sim::BarrettSimManager");
-setActivity("barrett_manager",0.001,LowestPriority,ORO_SCHED_OTHER)
+//setActivity("scheme",0.001,LowestPriority,ORO_SCHED_OTHER)
+barrett_manager.setPeriod(0.001);
+loadService("barrett_manager","sim_clock_activity");
 loadService("barrett_manager","rosparam");
 
 barrett_manager.rosparam.getAll();

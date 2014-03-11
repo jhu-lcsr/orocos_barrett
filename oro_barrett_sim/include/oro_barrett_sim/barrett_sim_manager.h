@@ -11,12 +11,7 @@
 #include <oro_barrett_interface/barrett_manager.h>
 
 #include <oro_barrett_sim/wam_sim_device.h>
-
-#define ORO_BARRETT_BHAND 1
-
-#ifdef ORO_BARRETT_BHAND
 #include <oro_barrett_sim/hand_sim_device.h>
-#endif
 
 namespace oro_barrett_sim {
 
@@ -87,9 +82,7 @@ namespace oro_barrett_sim {
     //! WAM robot container
     boost::shared_ptr<oro_barrett_interface::WamDeviceBase> wam_device_;
     //! Barrett hand container
-#ifdef ORO_BARRETT_BHAND
     boost::shared_ptr<oro_barrett_interface::HandDevice> hand_device_;
-#endif
     //\}
 
     ros::Time last_gz_update_time_;

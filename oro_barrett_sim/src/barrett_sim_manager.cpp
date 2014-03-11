@@ -121,7 +121,6 @@ void BarrettSimManager::updateHook()
       this->error();
     }
   }
-#ifdef ORO_BARRETT_BHAND
   if(hand_device_) {
     try {
       // Read the state estimation
@@ -131,7 +130,6 @@ void BarrettSimManager::updateHook()
       this->error();
     }
   }
-#endif
   read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
 
   // Write
@@ -145,7 +143,6 @@ void BarrettSimManager::updateHook()
       this->error();
     }
   }
-#ifdef ORO_BARRETT_BHAND
   if(hand_device_) {
     try {
       // Write the control command (force the write if the system is idle)
@@ -155,7 +152,6 @@ void BarrettSimManager::updateHook()
       this->error();
     }
   }
-#endif
   write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
 
   last_update_time_ = time;
@@ -164,11 +160,9 @@ void BarrettSimManager::updateHook()
 void BarrettSimManager::stopHook()
 {
   // Set the mode to IDLE
-#ifdef ORO_BARRETT_BHAND
   if(hand_device_) {
     hand_device_->idle();
   }
-#endif
 }
 
 void BarrettSimManager::cleanupHook()
@@ -259,7 +253,6 @@ bool BarrettSimManager::configureWam(const std::string &urdf_prefix)
 
 bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
 {
-#ifdef ORO_BARRETT_BHAND
   using namespace oro_barrett_interface;
 
   std::vector<std::string> wam_joint_names = boost::assign::list_of
@@ -299,7 +292,6 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
     return false;
   }
   RTT::log(RTT::Info) << "Configured Barrett Hand." << RTT::endlog();
-#endif
 
   return true;
 }
