@@ -56,8 +56,8 @@ void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model)
   }
 
   if(wam_device_) {
-    wam_device_->readDevice(gz_time, gz_period);
-    wam_device_->writeDevice(gz_time, gz_period);
+    wam_device_->readSim(gz_time, gz_period);
+    wam_device_->writeSim(gz_time, gz_period);
   }
 
   last_gz_update_time_ = gz_time;
@@ -94,7 +94,7 @@ bool BarrettSimManager::startHook()
       wam_device_->setZero();
       // Write to the configuration ports
       wam_device_->readConfig();
-      wam_device_->readHW(last_update_time_,this->getPeriod());
+      wam_device_->readDevice(last_update_time_,this->getPeriod());
     }
   } catch(std::runtime_error &err) {
     RTT::log(RTT::Error) << "Could not start WAM: " << err.what() << RTT::endlog();
@@ -115,7 +115,7 @@ void BarrettSimManager::updateHook()
   if(wam_device_) {
     try {
       // Read the state estimation
-      wam_device_->readHW(time,period);
+      wam_device_->readDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not read the WAM state: " << err.what() << RTT::endlog();
       this->error();
@@ -125,7 +125,7 @@ void BarrettSimManager::updateHook()
   if(hand_device_) {
     try {
       // Read the state estimation
-      hand_device_->readHW(time,period);
+      hand_device_->readDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not read the BHand state: " << err.what() << RTT::endlog();
       this->error();
@@ -139,7 +139,7 @@ void BarrettSimManager::updateHook()
   if(wam_device_) {
     try {
       // Write the control command (force the write if the system is idle)
-      wam_device_->writeHW(time,period);
+      wam_device_->writeDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
       this->error();
@@ -149,7 +149,7 @@ void BarrettSimManager::updateHook()
   if(hand_device_) {
     try {
       // Write the control command (force the write if the system is idle)
-      hand_device_->writeHW(time,period);
+      hand_device_->writeDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
       this->error();
@@ -262,7 +262,7 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
 #ifdef ORO_BARRETT_BHAND
   using namespace oro_barrett_interface;
 
-  std::vector<std::string> wam_joint_names = boost::list_of
+  std::vector<std::string> wam_joint_names = boost::assign::list_of
     ("/finger_1/prox_joint")
     ("/finger_1/med_joint")
     ("/finger_1/dist_joint")
@@ -273,10 +273,10 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
     ("/finger_3/dist_joint");
 
   // Vector of gazebo joints
-  std::vector<gazebo::physics::JointPtr> joints(DOF);
+  std::vector<gazebo::physics::JointPtr> joints(wam_joint_names.size());
 
   // Look at the SDF for the 7 desired WAM joints
-  for(unsigned j=0; j<DOF; j++) {
+  for(unsigned j=0; j<oro_barrett_interface::HandDevice::DOF; j++) {
     joints[j] = gazebo_model_->GetJoint(urdf_prefix + wam_joint_names[j]);
     if(!joints[j]) {
       RTT::log(RTT::Error) << "Could not find joint \"" << urdf_prefix+wam_joint_names[j] <<"\" in URDF/SDF"<<RTT::endlog();

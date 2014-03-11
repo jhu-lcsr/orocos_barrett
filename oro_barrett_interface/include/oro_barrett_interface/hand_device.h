@@ -11,7 +11,7 @@
 #include <sensor_msgs/JointState.h>
 
 #include <rtt_ros_tools/throttles.h>
-#include <rtt_rostopic/rostopic.h>
+#include <rtt_roscomm/rtt_rostopic.h>
 
 #include <oro_barrett_msgs/BHandCmd.h>
 
@@ -74,9 +74,14 @@ namespace oro_barrett_interface {
     virtual void setTrapezoidalMode(unsigned int joint_index) = 0;
 
     //! Read the hardware state and publish it
-    virtual void readHW(RTT::Seconds time, RTT::Seconds period) = 0;
+    virtual void readDevice(ros::Time time, RTT::Seconds period) = 0;
     //! Write the command to the hardware
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period) = 0;
+    virtual void writeDevice(ros::Time time, RTT::Seconds period) = 0;
+
+    //! Read the simulation state
+    virtual void readSim(ros::Time time, RTT::Seconds period) { }
+    //! Write the simulation command
+    virtual void writeSim(ros::Time time, RTT::Seconds period) { }
 
     HandDevice(
         RTT::Service::shared_ptr parent_service,
@@ -89,7 +94,45 @@ namespace oro_barrett_interface {
     virtual void open() = 0;
     virtual void close() = 0;
 
+    //! Number of pucks in the hand
+    static const unsigned int N_PUCKS = 4;
+    static const unsigned int DOF = 8;
+
+    //! Hand run mode
+    enum RunMode {
+      IDLE = 0,
+      INITIALIZE,
+      RUN
+    };
+
+    //! Initialization state
+    enum InitState {
+      INIT_FINGERS = 0,
+      SEEK_FINGERS,
+      INIT_SPREAD,
+      SEEK_SPREAD,
+      INIT_CLOSE
+    };
+
   protected:
+
+    //! The current run mode
+    RunMode run_mode;
+
+    //! The current initialization state
+    InitState init_state;
+
+    //! Mode bitmasks
+    unsigned int 
+      mode_torque,
+      mode_position,
+      mode_velocity,
+      mode_trapezoidal;
+
+    //! Flag desingating any modes have changed
+    bool modes_changed;
+
+
     //! RTT Service for BHand interfaces
     RTT::Service::shared_ptr parent_service_;
 
@@ -182,6 +225,14 @@ namespace oro_barrett_interface {
 
     knuckle_torque(4),
 
+    run_mode(IDLE),
+
+    mode_torque(0x0),
+    mode_position(0x0),
+    mode_velocity(0x0),
+    mode_trapezoidal(0x0),
+    modes_changed(false),
+
     // Throttles
     joint_state_throttle(0.01)
   {
@@ -192,7 +243,7 @@ namespace oro_barrett_interface {
     hand_service->addOperation("idle", &HandDevice::idle, this, RTT::OwnThread)
       .doc("Disable the hand motors, but continue reading the state.");
     hand_service->addOperation("initialize", &HandDevice::initialize, this, RTT::OwnThread)
-      .doc("Initialize the hand by driving the fingers open. NOTE: This command must be performed before ACTIVATITing the WAM for the first time. It cannot be performed while the WAM is activated.");
+      .doc("Initialize the hand by driving the fingers open. NOTE: This command must be performed BEFORE activatiting the WAM for the first time. It cannot be performed while the WAM is activated.");
     hand_service->addOperation("run", &HandDevice::run, this, RTT::OwnThread)
       .doc("Enable sending commands to the hand motors.");
     hand_service->addOperation("open", &HandDevice::open, this, RTT::OwnThread)
@@ -244,12 +295,9 @@ namespace oro_barrett_interface {
       .doc("The full (actuated and underactuated) 8-DOF joint state.");
     hand_service->addPort("center_of_mass_debug_out",center_of_mass_debug_out)
       .doc("Center of mass pose.");
-    
-    // Get an instance of the rtt_rostopic service requester
-    rtt_rostopic::ROSTopic rostopic;
 
     // Add the port and stream it to a ROS topic
-    center_of_mass_debug_out.createStream(rostopic.connection("~/"+parent_service->getOwner()->getName()+"/hand/center_of_mass"));
+    center_of_mass_debug_out.createStream(rtt_roscomm::topic("~/"+parent_service->getOwner()->getName()+"/hand/center_of_mass"));
 
     using namespace boost::assign;
     joint_names.clear();

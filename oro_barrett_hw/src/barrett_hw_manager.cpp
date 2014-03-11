@@ -86,7 +86,7 @@ bool BarrettHWManager::startHook()
       wam_device_->setZero();
       // Write to the configuration ports
       wam_device_->readConfig();
-      wam_device_->readHW(last_update_time_,this->getPeriod());
+      wam_device_->readDevice(last_update_time_,this->getPeriod());
     }
   } catch(std::runtime_error &err) {
     RTT::log(RTT::Error) << "Could not start WAM: " << err.what() << RTT::endlog();
@@ -114,7 +114,7 @@ void BarrettHWManager::updateHook()
   if(wam_device_) {
     try {
       // Read the state estimation
-      wam_device_->readHW(time,period);
+      wam_device_->readDevice(time,period);
       // Flush the buffers if the safety mode switched to idle
       if(wam_device_->getSafetyMode() == barrett::SafetyModule::IDLE 
          && wam_device_->getSafetyMode() != safety_mode_) 
@@ -131,7 +131,7 @@ void BarrettHWManager::updateHook()
   if(hand_device_) {
     try {
       // Read the state estimation
-      hand_device_->readHW(time,period);
+      hand_device_->readDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not read the BHand state: " << err.what() << RTT::endlog();
       this->error();
@@ -144,7 +144,7 @@ void BarrettHWManager::updateHook()
   if(wam_device_) {
     try {
       // Write the control command (force the write if the system is idle)
-      wam_device_->writeHW(time,period);
+      wam_device_->writeDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
       this->error();
@@ -153,7 +153,7 @@ void BarrettHWManager::updateHook()
   if(hand_device_) {
     try {
       // Write the control command (force the write if the system is idle)
-      hand_device_->writeHW(time,period);
+      hand_device_->writeDevice(time,period);
     } catch(std::runtime_error &err) {
       RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
       this->error();

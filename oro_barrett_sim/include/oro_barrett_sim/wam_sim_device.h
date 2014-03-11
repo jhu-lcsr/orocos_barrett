@@ -68,21 +68,16 @@ namespace oro_barrett_sim {
       run_mode = IDLE;
     }
 
-    void readDevice(ros::Time time, RTT::Seconds period)
+    void readSim(ros::Time time, RTT::Seconds period)
     {
       // Get state from gazebo joints
       for(unsigned j=0; j < DOF; j++) {
-
-        double new_joint_position = gazebo_joints_[j]->GetAngle(0).Radian();
-        double joint_position_change = new_joint_position - raw_joint_position[j];
-        double computed_velocity = joint_position_change/period; 
-
         raw_joint_velocity[j] = gazebo_joints_[j]->GetVelocity(0);
-        raw_joint_position[j] = new_joint_position;
+        raw_joint_position[j] = gazebo_joints_[j]->GetAngle(0).Radian();
       }
     }
 
-    void writeDevice(ros::Time time, RTT::Seconds period)
+    void writeSim(ros::Time time, RTT::Seconds period)
     {
       switch(run_mode) {
         case RUN:
@@ -101,7 +96,7 @@ namespace oro_barrett_sim {
       };
     }
 
-    virtual void readHW(ros::Time time, RTT::Seconds period)
+    virtual void readDevice(ros::Time time, RTT::Seconds period)
     {
       // Exponentially smooth velocity 
       this->joint_velocity = 
@@ -130,7 +125,7 @@ namespace oro_barrett_sim {
       }
     }
 
-    virtual void writeHW(ros::Time time, RTT::Seconds period)
+    virtual void writeDevice(ros::Time time, RTT::Seconds period)
     {
       // Check if the effort command port is connected
       if(this->joint_effort_in.connected()) {

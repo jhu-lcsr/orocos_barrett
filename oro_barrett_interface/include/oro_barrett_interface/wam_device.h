@@ -34,15 +34,15 @@ namespace oro_barrett_interface {
     //! Read the configuration and publish it
     virtual void readConfig() = 0;
 
-    //! Read the device state
+    //! Read the hardware state and publish it
     virtual void readDevice(ros::Time time, RTT::Seconds period) = 0;
-    //! Write the device command
+    //! Write the command to the hardware
     virtual void writeDevice(ros::Time time, RTT::Seconds period) = 0;
 
-    //! Read the hardware state and publish it
-    virtual void readHW(ros::Time time, RTT::Seconds period) = 0;
-    //! Write the command to the hardware
-    virtual void writeHW(ros::Time time, RTT::Seconds period) = 0;
+    //! Read the simulation state
+    virtual void readSim(ros::Time time, RTT::Seconds period) = 0;
+    //! Write the simulation command
+    virtual void writeSim(ros::Time time, RTT::Seconds period) = 0;
 
     //! Write the calibration command when the wam is "near" the home position
     virtual void initialize() = 0;
@@ -222,6 +222,10 @@ namespace oro_barrett_interface {
     {
       parent_service_->removeService("wam");
     }
+
+    virtual void readSim(ros::Time time, RTT::Seconds period) { }
+
+    virtual void writeSim(ros::Time time, RTT::Seconds period) { }
 
     virtual void setZero() 
     {

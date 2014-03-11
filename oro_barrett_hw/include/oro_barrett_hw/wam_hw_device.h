@@ -106,8 +106,11 @@ namespace oro_barrett_hw {
       //interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
     }
 
-    virtual void readDevice() 
-    { 
+    virtual void readSim() { } 
+    virtual void writeSim() { }
+
+    virtual void readDevice(ros::Time time, RTT::Seconds period)
+    {
       // Poll the hardware
       try {
         interface->update();
@@ -141,11 +144,6 @@ namespace oro_barrett_hw {
       // Store position
       this->joint_position = raw_joint_position;
 
-    }
-
-    virtual void readHW(ros::Time time, RTT::Seconds period)
-    {
-      this->readDevice();
 
       // Write to data ports
       this->joint_position_out.write(this->joint_position);
@@ -183,7 +181,7 @@ namespace oro_barrett_hw {
       }
     }
 
-    virtual void writeHW(ros::Time time, RTT::Seconds period)
+    virtual void writeDevice(ros::Time time, RTT::Seconds period)
     {
       // Check if the effort command port is connected
       if(this->joint_effort_in.connected()) {
@@ -273,19 +271,13 @@ namespace oro_barrett_hw {
       }
 
       // Set the torques
-      this->writeDevice();
+      interface->setTorques(this->joint_effort);
 
       // Save the last effort command
       this->joint_effort_last = this->joint_effort;
 
       // Pass along commanded effort for anyone who cares
       this->joint_effort_out.write(this->joint_effort);
-    }
-
-    virtual void writeDevice() 
-    { 
-      // Set the torques
-      interface->setTorques(this->joint_effort);
     }
 
 

@@ -32,8 +32,8 @@ namespace oro_barrett_hw {
     virtual void setVelocityMode(unsigned int joint_index);
     virtual void setTrapezoidalMode(unsigned int joint_index);
 
-    virtual void readHW(RTT::Seconds time, RTT::Seconds period);
-    virtual void writeHW(RTT::Seconds time, RTT::Seconds period);
+    virtual void readDevice(ros::Time time, RTT::Seconds period);
+    virtual void writeDevice(ros::Time time, RTT::Seconds period);
 
     virtual void open();
     virtual void close();
@@ -48,26 +48,9 @@ namespace oro_barrett_hw {
     static const double INIT_UPDATE_PERIOD = 0.1;
     //! The update period while running / idling
     static const double RUN_UPDATE_PERIOD = 1.0/30.0;
-    
-    //! Number of pucks in the hand (4)
-    static const unsigned int N_PUCKS = barrett::Hand::DOF;
 
     //! Maximum allowable hand puck temperature
     static const double MAX_PUCK_TEMP = 65.0;
-
-    enum RunMode {
-      IDLE = 0,
-      INITIALIZE,
-      RUN
-    };
-
-    enum InitState {
-      INIT_FINGERS = 0,
-      SEEK_FINGERS,
-      INIT_SPREAD,
-      SEEK_SPREAD,
-      INIT_CLOSE
-    };
 
   protected:
 
@@ -189,23 +172,14 @@ namespace oro_barrett_hw {
     };
      
   private:
-    //! Measured execution times
-    RTT::Seconds last_read_time, last_write_time;
     //! Minimum execution period. This runs at 10Hz before hand initialization and 30Hz afterwards.
     RTT::Seconds min_period;
-    RunMode run_mode;
-    InitState init_state;
+    //! Measured execution times
+    RTT::Seconds last_read_time, last_write_time;
+    
+
     const std::vector<barrett::Puck*>& pucks;
     HandInterface *interface;
-
-    // Mode bitmasks
-    unsigned int 
-      mode_torque,
-      mode_position,
-      mode_velocity,
-      mode_trapezoidal;
-
-    bool modes_changed;
 
     Eigen::VectorXd temperature;
     void checkTemperature();
@@ -220,17 +194,11 @@ namespace oro_barrett_hw {
         parent_service, 
         urdf_model, 
         urdf_prefix),
+    min_period(RUN_UPDATE_PERIOD),
     last_read_time(0.0),
     last_write_time(0.0),
-    min_period(RUN_UPDATE_PERIOD),
-    run_mode(IDLE),
     pucks(barrett_manager->getHandPucks()),
     interface(new HandHWDevice::HandInterface(pucks)),
-    mode_torque(0x0),
-    mode_position(0x0),
-    mode_velocity(0x0),
-    mode_trapezoidal(0x0),
-    modes_changed(false),
     temperature(N_PUCKS)
   { 
     parent_service->provides("hand")->addProperty("temperature",temperature);
@@ -261,7 +229,7 @@ namespace oro_barrett_hw {
     interface->setCompliance(enable);
   }
 
-  void HandHWDevice::readHW(RTT::Seconds time, RTT::Seconds period)
+  void HandHWDevice::readDevice(ros::Time time, RTT::Seconds period)
   {
     // Always compute and write center of mass
     this->computeCenterOfMass(center_of_mass);
@@ -333,10 +301,10 @@ namespace oro_barrett_hw {
     }
   }
 
-  void HandHWDevice::writeHW(RTT::Seconds time, RTT::Seconds period)
+  void HandHWDevice::writeDevice(ros::Time time, RTT::Seconds period)
   {
     // Don't run too fast
-    if(time - last_write_time < min_period) {
+    if((time - last_write_time).toSec() < min_period) {
       return;
     }
 
