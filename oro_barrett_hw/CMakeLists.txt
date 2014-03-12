@@ -3,7 +3,6 @@ project(oro_barrett_hw)
 
 find_package(catkin REQUIRED 
   cmake_modules 
-  oro_barrett_interface
   control_toolbox 
   urdf
   kdl_parser
@@ -12,18 +11,10 @@ find_package(catkin REQUIRED
   angles
   )
 
-catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES oro_barrett_hw
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
-)
+if("$ENV{OROCOS_TARGET}" STREQUAL "xenomai")
 
-find_package(barrett)
-find_package(Xenomai)
-
-if(barrett_FOUND AND Xenomai_FOUND)
-
+  find_package(barrett)
+  find_package(Xenomai)
   find_package(Eigen REQUIRED)
   find_package(OROCOS-RTT REQUIRED)
   find_package(orocos_kdl REQUIRED)
@@ -57,11 +48,16 @@ if(barrett_FOUND AND Xenomai_FOUND)
   if(CATKIN_ENABLE_TESTING)
     orocos_use_package(ocl-deployment)
     orocos_use_package(ocl-taskbrowser)
-    #orocos_executable(idle_test
-      #test/idle_test.cpp)
   endif()
 
-  orocos_generate_package()
+  orocos_generate_package(
+    INCLUDE_DIRS include
+    DEPENDS barrett
+    DEPENDS_TARGETS oro_barrett_interface)
 else()
   message(WARNING "libbarret or xenomai could not be found, so oro_barrett_hw is not being built.")
+
+  orocos_generate_package(
+    INCLUDE_DIRS include
+    DEPENDS_TARGETS oro_barrett_interface)
 endif()

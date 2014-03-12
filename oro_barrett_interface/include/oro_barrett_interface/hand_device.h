@@ -298,6 +298,7 @@ namespace oro_barrett_interface {
 
     // Add the port and stream it to a ROS topic
     center_of_mass_debug_out.createStream(rtt_roscomm::topic("~/"+parent_service->getOwner()->getName()+"/hand/center_of_mass"));
+    joint_cmd_in.createStream(rtt_roscomm::topic("~/"+parent_service->getOwner()->getName()+"/hand/cmd"));
 
     using namespace boost::assign;
     joint_names.clear();

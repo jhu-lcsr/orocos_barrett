@@ -3,7 +3,6 @@ project(oro_barrett_sim)
 
 find_package(catkin REQUIRED 
   cmake_modules 
-  oro_barrett_interface
   control_toolbox 
   urdf
   kdl_parser
@@ -17,8 +16,6 @@ find_package(OROCOS-RTT REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(Gazebo REQUIRED)
 
-include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
-
 include_directories(include 
   ${GAZEBO_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
@@ -29,11 +26,9 @@ include_directories(include
 add_definitions(
   ${Eigen_DEFINITIONS})
 
-link_directories(${BARRETT_LIBRARY_DIRS})
-
 orocos_component(barrett_sim_manager
   src/barrett_sim_manager.cpp)
-message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
+#message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
 target_link_libraries(barrett_sim_manager
   ${GAZEBO_LIBRARIES}
   ${kdl_parser_LIBRARIES}
@@ -44,8 +39,8 @@ target_link_libraries(barrett_sim_manager
 if(CATKIN_ENABLE_TESTING)
   orocos_use_package(ocl-deployment)
   orocos_use_package(ocl-taskbrowser)
-  #orocos_executable(idle_test
-    #test/idle_test.cpp)
 endif()
 
-orocos_generate_package(INCLUDE_DIRS include)
+orocos_generate_package(
+  INCLUDE_DIRS include
+  DEPENDS_TARGETS oro_barrett_interface)

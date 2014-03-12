@@ -9,7 +9,7 @@
         <type>oro_barrett_sim::BarrettSimManager</type>
         <name>barrett_manager</name>
       </component>
-      <opsScriptFile>$(find oro_barrett_sim)/test/idle.ops</opsScriptFile>
+      <opsScriptFile>$(find oro_barrett_sim)/test/hand.ops</opsScriptFile>
     </plugin>
   </gazebo>
 
@@ -20,6 +20,6 @@
   <link name="world"/>
 
   <!-- Create a 7-DOF WAM arm -->
-  <xacro:wam_7dof prefix="wam" parent_link="world" xyz="0.0 0.0 1.0" rpy="0 0 0" />
+  <xacro:bhand prefix="hand" parent_link="world" xyz="0.0 0.0 1.0" rpy="0 0 0" />
 
 </robot>

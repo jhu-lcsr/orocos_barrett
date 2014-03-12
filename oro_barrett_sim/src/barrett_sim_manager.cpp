@@ -60,6 +60,11 @@ void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model)
     wam_device_->writeSim(gz_time, gz_period);
   }
 
+  if(hand_device_) {
+    hand_device_->readSim(gz_time, gz_period);
+    hand_device_->writeSim(gz_time, gz_period);
+  }
+
   last_gz_update_time_ = gz_time;
 }
 
@@ -255,7 +260,7 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
 {
   using namespace oro_barrett_interface;
 
-  std::vector<std::string> wam_joint_names = boost::assign::list_of
+  std::vector<std::string> hand_joint_names = boost::assign::list_of
     ("/finger_1/prox_joint")
     ("/finger_1/med_joint")
     ("/finger_1/dist_joint")
@@ -266,13 +271,13 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
     ("/finger_3/dist_joint");
 
   // Vector of gazebo joints
-  std::vector<gazebo::physics::JointPtr> joints(wam_joint_names.size());
+  std::vector<gazebo::physics::JointPtr> joints(hand_joint_names.size());
 
   // Look at the SDF for the 7 desired WAM joints
   for(unsigned j=0; j<oro_barrett_interface::HandDevice::DOF; j++) {
-    joints[j] = gazebo_model_->GetJoint(urdf_prefix + wam_joint_names[j]);
+    joints[j] = gazebo_model_->GetJoint(urdf_prefix + hand_joint_names[j]);
     if(!joints[j]) {
-      RTT::log(RTT::Error) << "Could not find joint \"" << urdf_prefix+wam_joint_names[j] <<"\" in URDF/SDF"<<RTT::endlog();
+      RTT::log(RTT::Error) << "Could not find joint \"" << urdf_prefix+hand_joint_names[j] <<"\" in URDF/SDF"<<RTT::endlog();
       return false;
     }
   }
@@ -290,6 +295,9 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
     RTT::log(RTT::Error) << "Could not configure Barrett Hand: " <<
       ex.what() << RTT::endlog();
     return false;
+  } catch(...) {
+    RTT::log(RTT::Error) << "Could not configure Barrett Hand." << RTT::endlog();
+    throw;
   }
   RTT::log(RTT::Info) << "Configured Barrett Hand." << RTT::endlog();
 

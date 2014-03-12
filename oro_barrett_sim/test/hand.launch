@@ -1,0 +1,30 @@
+<launch>
+  <!-- roslaunch arguments -->
+  <arg name="gui" default="true"/>
+  <arg name="debug" default="false"/>
+
+  <!-- Start Gazebo -->
+  <include file="$(find rtt_gazebo_examples)/test/empty_world.launch">
+    <env name="ORO_LOGLEVEL" value="debug"/>
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="world_name" value="$(find oro_barrett_sim)/test/test.world"/>
+  </include>
+
+  <param name="robot_description" 
+    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/hand.xacro'" />
+
+  <!-- Load WAM URDF into gazebo -->
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-urdf -model hand -param robot_description"/>
+
+  <group ns="gazebo">
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+      <param name="publish_frequency" value="50"/>
+    </node>
+  </group>
+</launch>
+

@@ -37,7 +37,7 @@ namespace oro_barrett_sim {
         parent_service, 
         urdf_model, 
         urdf_prefix),
-    gazebo_joints(gazebo_joints),
+    gazebo_joints(joints),
     compliance_enabled(false),
     joint_torque(8),
     joint_torque_max(8,1.5),
@@ -45,12 +45,11 @@ namespace oro_barrett_sim {
     p_gain(1.0),
     d_gain(0.1),
     velocity_gain(0.1),
-    trap_generators(4),
     trap_start_times(4)
   { 
     // Initialize velocity profiles
     for(unsigned i=0; i<N_PUCKS; i++) {
-      trap_generators[i].SetMax(1.0,0.1);
+      trap_generators.push_back(KDL::VelocityProfile_Trap(1.0,0.1));
     }
   }
 
@@ -156,11 +155,12 @@ namespace oro_barrett_sim {
       // Apply torques
       if(i < 3) {
         // Fingers (this applies torqueswitch behavior)
-        applyFingerTorque(i, joint_torque);
+        //applyFingerTorque(i, joint_torque);
       } else {
         // Spread
-        gazebo_joints[0]->SetForce(0,joint_torque);
-        gazebo_joints[1]->SetForce(0,joint_torque);
+        double spread_err = joint_position[0] - joint_position[3];
+        gazebo_joints[0]->SetForce(0,10*spread_err);
+        gazebo_joints[3]->SetForce(0,10*spread_err);
       }
 
     }
