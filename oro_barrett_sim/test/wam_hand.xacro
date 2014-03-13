@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wam">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wam_hand">
 
   <!-- Gazebo RTT Plugin -->
   <gazebo>
@@ -21,5 +21,7 @@
 
   <!-- Create a 7-DOF WAM arm -->
   <xacro:wam_7dof prefix="wam" parent_link="world" xyz="0.0 0.0 1.0" rpy="0 0 0" />
+  <!-- Create a BHand -->
+  <xacro:bhand prefix="wam/hand" parent_link="wam/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 0" />
 
 </robot>

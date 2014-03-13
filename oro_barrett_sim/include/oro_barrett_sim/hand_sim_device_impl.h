@@ -102,36 +102,6 @@ namespace oro_barrett_sim {
     }
   }
 
-
-  void HandSimDevice::applyFingerTorque(const unsigned finger_id, const double torque) {
-    static const double STOP_TORQUE = 5.0;
-    static const double BREAKAWAY_TORQUE = 0.5;
-    static const double FINGER_JOINT_RATIO = 0.0027 / 0.008;
-
-    // Get the finger indices
-    unsigned medial_id, distal_id;
-    fingerToJointIDs(finger_id, medial_id, distal_id);
-
-    // Get the torque on the medial link
-    const double link_torque = gazebo_joints[medial_id]->GetForceTorque(0).body2Torque.z;
-    const double fingertip_torque = gazebo_joints[distal_id]->GetForceTorque(0).body2Torque.z;
-
-    // If the torque exeeds the breakway torque, allow the fingers to breakaway
-    if(std::abs(link_torque) < BREAKAWAY_TORQUE) {
-      gazebo_joints[medial_id]->SetForce(0,torque);
-      gazebo_joints[distal_id]->SetForce(0,torque*FINGER_JOINT_RATIO);
-    } else {
-      gazebo_joints[medial_id]->SetForce(0,sgn(torque)*BREAKAWAY_TORQUE);
-      gazebo_joints[distal_id]->SetForce(0,torque);
-    }
-
-    // If the torque exceeds the stop torque, stop the fingers, and hold position
-    if(std::abs(link_torque) > STOP_TORQUE) {
-      joint_cmd.mode[finger_id] = oro_barrett_msgs::BHandCmd::MODE_PID;
-      joint_cmd.cmd[finger_id] = joint_position[medial_id];
-    }
-  }
-
   void HandSimDevice::writeSim(ros::Time time, RTT::Seconds period)
   {
     // Transmission ratio between two finger joints
@@ -192,8 +162,8 @@ namespace oro_barrett_sim {
         // Spread
         double spread_err = joint_position[0] - joint_position[1];
         double spread_derr = joint_velocity[0] - joint_velocity[1];
-        double spread_constraint_force = spread_err + 0*spread_derr;
-        gazebo_joints[0]->SetForce(0,spread_constraint_force + joint_torque);
+        double spread_constraint_force = 100*spread_err + 0*spread_derr;
+        gazebo_joints[0]->SetForce(0,-spread_constraint_force + joint_torque);
         gazebo_joints[1]->SetForce(0,spread_constraint_force + joint_torque);
       }
       else

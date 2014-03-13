@@ -1,0 +1,31 @@
+
+import("rtt_ros");
+ros.import("rtt_rosclock");
+
+// Configure barrett manager
+barrett_manager.setPeriod(0.001);
+loadService("barrett_manager","sim_clock_activity");
+loadService("barrett_manager","rosparam");
+
+barrett_manager.rosparam.getAll();
+barrett_manager.rosparam.getAbsolute("robot_description");
+
+barrett_manager.configure();
+
+// Create a 7-DOF WAM arm
+barrett_manager.configureWam7("wam");
+// Create a BHand
+barrett_manager.configureHand("wam/hand");
+
+// Publish joint state to ROS
+stream("barrett_manager.wam.joint_state_out",ros.topic("~wam/joint_states"));
+stream("barrett_manager.hand.joint_state_out",ros.topic("~hand/joint_states"));
+
+barrett_manager.start();
+
+barrett_manager.wam.initialize();
+barrett_manager.wam.run();
+
+barrett_manager.hand.initialize();
+barrett_manager.hand.run();
+

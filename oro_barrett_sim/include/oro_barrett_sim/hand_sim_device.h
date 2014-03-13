@@ -46,7 +46,6 @@ namespace oro_barrett_sim {
      
   protected:
 
-    void applyFingerTorque(const unsigned finger_index, const double torque);
     bool doneMoving(const unsigned pair_index);
     bool withinTorqueLimits(const unsigned joint_index);
 
