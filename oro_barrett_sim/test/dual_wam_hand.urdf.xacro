@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_wam_hand">
+
+  <!-- Gazebo RTT Plugin -->
+  <gazebo>
+    <plugin name="rtt_gazebo" filename="librtt_gazebo_deployer.so">
+      <component>
+        <package>oro_barrett_sim</package>
+        <type>oro_barrett_sim::BarrettSimManager</type>
+        <name>barrett_manager_left</name>
+      </component>
+      <component>
+        <package>oro_barrett_sim</package>
+        <type>oro_barrett_sim::BarrettSimManager</type>
+        <name>barrett_manager_right</name>
+      </component>
+      <opsScriptFile>$(arg ops_script)</opsScriptFile>
+    </plugin>
+  </gazebo>
+
+  <!-- Includea all the WAM stuff -->
+  <xacro:include filename="$(find barrett_model)/models/wam_top.urdf.xacro"/>
+
+  <!-- Root link is in the world frame-->
+  <link name="world"/>
+
+  <!-- Create a 7-DOF WAM arm -->
+  <xacro:wam_7dof prefix="wam_left" parent_link="world" xyz="0.5 0.0 1.0" rpy="0 0 -1.5707" />
+  <xacro:wam_7dof prefix="wam_right" parent_link="world" xyz="-0.5 0.0 1.0" rpy="0 0 -1.5707" />
+  <!-- Create a BHand -->
+  <xacro:bhand prefix="wam_left/hand" parent_link="wam_left/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 0" />
+  <xacro:bhand prefix="wam_right/hand" parent_link="wam_right/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 0" />
+
+</robot>

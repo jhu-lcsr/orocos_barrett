@@ -15,18 +15,25 @@
   </include>
 
   <param name="robot_description" 
-    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/wam_hand.urdf.xacro' prefix:=wam ops_script:=$(find oro_barrett_sim)/test/wam_hand.ops" />
+    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/dual_wam_hand.urdf.xacro' ops_script:=$(find oro_barrett_sim)/test/dual_wam_hand.ops" />
 
   <!-- Load WAM URDF into gazebo -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-urdf -model wam_hand -param robot_description"/>
+    args="-urdf -model dual_wam_hand -param robot_description"/>
 
   <group ns="gazebo">
-    <node ns="hand" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+    <node ns="hand_left" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
       <param name="publish_frequency" value="50"/>
     </node>
-    <node ns="wam" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+    <node ns="wam_left" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+      <param name="publish_frequency" value="50"/>
+    </node>
+    <node ns="hand_right" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+      <param name="publish_frequency" value="50"/>
+    </node>
+    <node ns="wam_right" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
       <param name="publish_frequency" value="50"/>
     </node>
   </group>
 </launch>
+
