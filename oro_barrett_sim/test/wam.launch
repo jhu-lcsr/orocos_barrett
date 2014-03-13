@@ -8,12 +8,12 @@
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="headless" value="false"/>
-    <arg name="world_name" value="$(find oro_barrett_sim)/test/test.world"/>
+    <arg name="world_name" value="$(find oro_barrett_sim)/test/wam.world"/>
   </include>
 
   <!-- Load WAM UDRF onto parameter server -->
   <param name="robot_description" 
-    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/idle.xacro' ops_script:=$(find oro_barrett_sim)/test/idle.ops" />
+    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/wam.urdf.xacro' ops_script:=$(find oro_barrett_sim)/test/wam.ops" />
 
   <!-- Load WAM URDF into gazebo -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"

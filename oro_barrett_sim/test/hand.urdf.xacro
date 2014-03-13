@@ -20,6 +20,6 @@
   <link name="world"/>
 
   <!-- Create a 7-DOF WAM arm -->
-  <xacro:bhand prefix="hand" parent_link="world" xyz="0.0 0.0 1.0" rpy="0 0 0" />
+  <xacro:bhand prefix="hand" parent_link="world" xyz="0.0 0.0 0.5" rpy="0 0 0" />
 
 </robot>
