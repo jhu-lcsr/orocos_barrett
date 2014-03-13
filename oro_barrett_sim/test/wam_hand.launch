@@ -15,7 +15,7 @@
   </include>
 
   <param name="robot_description" 
-    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/hand.xacro' ops_script:=$(find oro_barrett_sim)/test/hand.ops" />
+    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/wam_hand.xacro' ops_script:=$(find oro_barrett_sim)/test/wam_hand.ops" />
 
   <!-- Load WAM URDF into gazebo -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
