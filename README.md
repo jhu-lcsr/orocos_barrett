@@ -94,7 +94,22 @@ source devel/setup.sh
 
 Now you can move on to trying the examples.
 
-## Examples
+
+## Examples with Gazebo
+
+```
+roslaunch oro_barrett_sim wam.launch
+```
+
+```
+roslaunch oro_barrett_sim hand.launch
+```
+
+```
+roslaunch oro_barrett_sim wam_hand.launch
+```
+
+## Examples with Real Hardware
 
 See each package for usage examples for both simulated and real robots.
 
