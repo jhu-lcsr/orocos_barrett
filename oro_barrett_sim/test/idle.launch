@@ -21,7 +21,7 @@
 
   <group ns="gazebo">
     <!-- Publish WAM state to TF -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="wam_state_publisher">
+    <node ns="wam" pkg="robot_state_publisher" type="robot_state_publisher" name="wam_state_publisher">
       <param name="publish_frequency" value="50"/>
     </node>
   </group>

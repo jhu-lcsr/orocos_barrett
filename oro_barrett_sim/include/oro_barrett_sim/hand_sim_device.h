@@ -54,13 +54,21 @@ namespace oro_barrett_sim {
 
     bool compliance_enabled;
 
+    double 
+      breakaway_torque, 
+      stop_torque;
+
     Eigen::VectorXd
+      link_torque,
+      fingertip_torque,
+      breakaway_angle,
       joint_torque,
       joint_torque_max,
       joint_torque_breakaway;
 
     std::vector<KDL::VelocityProfile_Trap> trap_generators;
     std::vector<ros::Time> trap_start_times;
+    std::vector<bool> torque_switches;
 
     double 
       p_gain,

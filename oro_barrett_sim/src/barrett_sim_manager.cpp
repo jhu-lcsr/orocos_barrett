@@ -262,12 +262,12 @@ bool BarrettSimManager::configureHand(const std::string &urdf_prefix)
 
   std::vector<std::string> hand_joint_names = boost::assign::list_of
     ("/finger_1/prox_joint")
-    ("/finger_1/med_joint")
-    ("/finger_1/dist_joint")
     ("/finger_2/prox_joint")
+    ("/finger_1/med_joint")
     ("/finger_2/med_joint")
-    ("/finger_2/dist_joint")
     ("/finger_3/med_joint")
+    ("/finger_1/dist_joint")
+    ("/finger_2/dist_joint")
     ("/finger_3/dist_joint");
 
   // Vector of gazebo joints

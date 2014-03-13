@@ -1,6 +1,5 @@
 
 import("rtt_ros");
-ros.import("oro_barrett_sim");
 ros.import("rtt_rosclock");
 
 // Configure barrett manager
@@ -17,6 +16,9 @@ barrett_manager.configure();
 barrett_manager.configureWam7("wam");
 
 // Publish joint state to ROS
-stream("barrett_manager.wam.joint_state_out",ros.topic("~joint_states"));
+stream("barrett_manager.wam.joint_state_out",ros.topic("~wam/joint_states"));
 
 barrett_manager.start();
+barrett_manager.wam.initialize();
+barrett_manager.wam.run();
+

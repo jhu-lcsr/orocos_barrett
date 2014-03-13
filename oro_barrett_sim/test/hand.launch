@@ -11,7 +11,7 @@
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="headless" value="false"/>
-    <arg name="world_name" value="$(find oro_barrett_sim)/test/test.world"/>
+    <arg name="world_name" value="$(find oro_barrett_sim)/test/hand.world"/>
   </include>
 
   <param name="robot_description" 
@@ -22,7 +22,7 @@
     args="-urdf -model hand -param robot_description"/>
 
   <group ns="gazebo">
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+    <node ns="hand" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
       <param name="publish_frequency" value="50"/>
     </node>
   </group>

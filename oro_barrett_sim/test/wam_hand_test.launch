@@ -1,16 +1,32 @@
 <launch>
-  <include file="$(find rtt_ros)/launch/deployer.launch">
-    <arg name="NAME" value="barrett"/>
-    <arg name="DEPLOYER_ARGS" value="-s $(find oro_barrett_hw)/test/wam_hand_test.ops"/>
-    <arg name="LOG_LEVEL" value="debug"/>
-    <arg name="DEBUG" value="false"/>
+  <!-- roslaunch arguments -->
+  <arg name="gui" default="true"/>
+  <arg name="debug" default="false"/>
+
+  <!-- Start Gazebo -->
+  <include file="$(find rtt_gazebo_examples)/test/empty_world.launch">
+    <env name="ORO_LOGLEVEL" value="debug"/>
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="world_name" value="$(find oro_barrett_sim)/test/hand.world"/>
   </include>
 
-  <group ns="barrett/barrett_hw_manager">
-    <param name="bus_id" value="0"/>
+  <param name="robot_description" 
+    command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/wam_hand.xacro'" />
+
+  <!-- Load WAM URDF into gazebo -->
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-urdf -model wam_hand -param robot_description"/>
+
+  <group ns="gazebo">
+    <node ns="hand" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+      <param name="publish_frequency" value="50"/>
+    </node>
+    <node ns="wam" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+      <param name="publish_frequency" value="50"/>
+    </node>
   </group>
-
-  <param name="robot_description" command="$(find xacro)/xacro.py '$(find barrett_model)/robots/wam_7dof_wam_bhand.urdf.xacro'" />
-
 </launch>
-
