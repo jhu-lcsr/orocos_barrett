@@ -1,20 +1,12 @@
 
 import("rtt_ros");
-ros.import("rtt_rosclock");
+import("rtt_rospack");
 
-// Configure barrett manager
-barrett_manager.setPeriod(0.001);
-loadService("barrett_manager","sim_clock_activity");
-loadService("barrett_manager","rosparam");
-
-barrett_manager.rosparam.getAll();
-barrett_manager.rosparam.getAbsolute("robot_description");
-
-barrett_manager.configure();
+// Load berrett manager
+runScript(ros.find("oro_barrett_sim")+"/test/barrett_manager.ops");
 
 // Create a 7-DOF WAM arm
 barrett_manager.configureWam7("wam");
-
 // Publish joint state to ROS
 stream("barrett_manager.wam.joint_state_out",ros.topic("~wam/joint_states"));
 

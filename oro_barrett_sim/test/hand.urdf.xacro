@@ -2,16 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wam">
 
   <!-- Gazebo RTT Plugin -->
-  <gazebo>
-    <plugin name="rtt_gazebo" filename="librtt_gazebo_deployer.so">
-      <component>
-        <package>oro_barrett_sim</package>
-        <type>oro_barrett_sim::BarrettSimManager</type>
-        <name>barrett_manager</name>
-      </component>
-      <opsScriptFile>$(find oro_barrett_sim)/test/hand.ops</opsScriptFile>
-    </plugin>
-  </gazebo>
+  <xacro:include filename="$(find oro_barrett_sim)/test/barrett_manager.urdf.xacro"/>
 
   <!-- Includea all the WAM stuff -->
   <xacro:include filename="$(find barrett_model)/models/wam_top.urdf.xacro"/>

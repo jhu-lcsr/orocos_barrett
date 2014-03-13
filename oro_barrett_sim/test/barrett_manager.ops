@@ -1,0 +1,14 @@
+
+import("rtt_ros");
+ros.import("rtt_rosclock");
+
+// Configure barrett manager
+barrett_manager.setPeriod(0.001);
+loadService("barrett_manager","sim_clock_activity");
+loadService("barrett_manager","rosparam");
+
+barrett_manager.rosparam.getAll();
+barrett_manager.rosparam.getAbsolute("robot_description");
+
+barrett_manager.configure();
+
