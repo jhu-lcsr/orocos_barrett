@@ -8,9 +8,6 @@ runScript(ros.find("oro_barrett_sim")+"/test/barrett_manager.ops");
 // Create a BHand
 barrett_manager.configureHand("hand");
 
-// Publish joint state to ROS
-stream("barrett_manager.hand.joint_state_out",ros.topic("~hand/joint_states"));
-
 barrett_manager.start();
 barrett_manager.hand.initialize();
 barrett_manager.hand.run();

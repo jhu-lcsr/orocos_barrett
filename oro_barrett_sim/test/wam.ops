@@ -7,8 +7,6 @@ runScript(ros.find("oro_barrett_sim")+"/test/barrett_manager.ops");
 
 // Create a 7-DOF WAM arm
 barrett_manager.configureWam7("wam");
-// Publish joint state to ROS
-stream("barrett_manager.wam.joint_state_out",ros.topic("~wam/joint_states"));
 
 barrett_manager.start();
 barrett_manager.wam.initialize();

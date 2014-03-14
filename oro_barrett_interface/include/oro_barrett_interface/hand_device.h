@@ -297,8 +297,10 @@ namespace oro_barrett_interface {
       .doc("Center of mass pose.");
 
     // Add the port and stream it to a ROS topic
-    center_of_mass_debug_out.createStream(rtt_roscomm::topic("~/"+parent_service->getOwner()->getName()+"/hand/center_of_mass"));
-    joint_cmd_in.createStream(rtt_roscomm::topic("~/"+parent_service->getOwner()->getName()+"/hand/cmd"));
+    std::string owner_name = parent_service->getOwner()->getName();
+    joint_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/hand/joint_states"));
+    center_of_mass_debug_out.createStream(rtt_roscomm::topic("~"+owner_name+"/hand/center_of_mass"));
+    joint_cmd_in.createStream(rtt_roscomm::topic("~"+owner_name+"/hand/cmd"));
 
     using namespace boost::assign;
     joint_names.clear();

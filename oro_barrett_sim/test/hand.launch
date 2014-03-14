@@ -21,8 +21,8 @@
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
     args="-urdf -model hand -param robot_description"/>
 
-  <group ns="gazebo">
-    <node ns="hand" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+  <group ns="gazebo/barrett_manager/hand">
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
       <param name="publish_frequency" value="50"/>
     </node>
   </group>

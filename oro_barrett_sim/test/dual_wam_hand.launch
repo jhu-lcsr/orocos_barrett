@@ -22,16 +22,14 @@
     args="-urdf -model dual_wam_hand -param robot_description"/>
 
   <group ns="gazebo">
-    <node ns="hand_left" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
-      <param name="publish_frequency" value="50"/>
+    <node pkg="joint_state_publisher" type="joint_state_publisher" name="$(anon joint_state_publisher)">
+      <rosparam param="source_list">
+        ["barrett_manager_left/wam/joint_states", "barrett_manager_left/hand/joint_states", "barrett_manager_right/wam/joint_states", "barrett_manager_right/hand/joint_states"]
+      </rosparam>
+      <param name="rate" value="50"/>
+      <remap from="robot_description" to="/robot_description"/>
     </node>
-    <node ns="wam_left" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
-      <param name="publish_frequency" value="50"/>
-    </node>
-    <node ns="hand_right" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
-      <param name="publish_frequency" value="50"/>
-    </node>
-    <node ns="wam_right" pkg="robot_state_publisher" type="robot_state_publisher" name="hand_state_publisher">
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="$(anon robot_state_publisher)">
       <param name="publish_frequency" value="50"/>
     </node>
   </group>

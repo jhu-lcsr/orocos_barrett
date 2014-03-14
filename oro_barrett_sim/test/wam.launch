@@ -19,9 +19,8 @@
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
     args="-urdf -model wam -param robot_description"/>
 
-  <group ns="gazebo">
-    <!-- Publish WAM state to TF -->
-    <node ns="wam" pkg="robot_state_publisher" type="robot_state_publisher" name="wam_state_publisher">
+  <group ns="gazebo/barrett_manager/wam">
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="$(anon robot_state_publisher)">
       <param name="publish_frequency" value="50"/>
     </node>
   </group>

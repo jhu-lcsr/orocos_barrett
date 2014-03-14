@@ -11,8 +11,6 @@ barrett_manager_left.rosparam.getAbsolute("robot_description");
 barrett_manager_left.configure();
 barrett_manager_left.configureWam7("wam_left");
 barrett_manager_left.configureHand("wam_left/hand");
-stream("barrett_manager_left.wam.joint_state_out",ros.topic("~wam_left/joint_states"));
-stream("barrett_manager_left.hand.joint_state_out",ros.topic("~hand_left/joint_states"));
 
 // Configure right barrett manager
 barrett_manager_right.setPeriod(0.001);
@@ -23,17 +21,15 @@ barrett_manager_right.rosparam.getAbsolute("robot_description");
 barrett_manager_right.configure();
 barrett_manager_right.configureWam7("wam_right");
 barrett_manager_right.configureHand("wam_right/hand");
-stream("barrett_manager_right.wam.joint_state_out",ros.topic("~wam_right/joint_states"));
-stream("barrett_manager_right.hand.joint_state_out",ros.topic("~hand_right/joint_states"));
 
 barrett_manager_left.start();
 barrett_manager_left.wam.initialize();
-barrett_manager_left.wam.run();
 barrett_manager_left.hand.initialize();
+barrett_manager_left.wam.run();
 barrett_manager_left.hand.run();
 
 barrett_manager_right.start();
 barrett_manager_right.wam.initialize();
-barrett_manager_right.wam.run();
 barrett_manager_right.hand.initialize();
+barrett_manager_right.wam.run();
 barrett_manager_right.hand.run();

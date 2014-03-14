@@ -22,6 +22,8 @@
 
 #include <boost/scoped_ptr.hpp>
 
+#include <rtt_roscomm/rtt_rostopic.h>
+
 namespace oro_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.
@@ -145,6 +147,9 @@ namespace oro_barrett_interface {
         .doc("Disable reading of additional data needed for calibration.");
       wam_service->addOperation("idle", &WamDevice::idle, this, RTT::OwnThread)
         .doc("Disable writing of commands and start reading additional data needed for calibration.");
+
+      std::string owner_name = parent_service->getOwner()->getName();
+      joint_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/wam/joint_states"));
 
       // Resize joint names
       joint_names.resize(DOF);
