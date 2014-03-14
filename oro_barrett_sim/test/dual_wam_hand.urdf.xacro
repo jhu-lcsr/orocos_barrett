@@ -25,8 +25,8 @@
   <link name="world"/>
 
   <!-- Create a 7-DOF WAM arm -->
-  <xacro:wam_7dof prefix="wam_left" parent_link="world" xyz="0.5 0.0 1.0" rpy="0 0 -1.5707" />
-  <xacro:wam_7dof prefix="wam_right" parent_link="world" xyz="-0.5 0.0 1.0" rpy="0 0 -1.5707" />
+  <xacro:wam_7dof prefix="wam_left" parent_link="world" xyz="0.5 0.0 0.1" rpy="0 0 -1.5707" />
+  <xacro:wam_7dof prefix="wam_right" parent_link="world" xyz="-0.5 0.0 0.1" rpy="0 0 -1.5707" />
   <!-- Create a BHand -->
   <xacro:bhand prefix="wam_left/hand" parent_link="wam_left/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 0" />
   <xacro:bhand prefix="wam_right/hand" parent_link="wam_right/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 0" />

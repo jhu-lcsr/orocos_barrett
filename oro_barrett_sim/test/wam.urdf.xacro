@@ -11,6 +11,6 @@
   <link name="world"/>
 
   <!-- Create a 7-DOF WAM arm -->
-  <xacro:wam_7dof prefix="wam" parent_link="world" xyz="0.0 0.0 1.0" rpy="0 0 0" />
+  <xacro:wam_7dof prefix="wam" parent_link="world" xyz="0.0 0.0 0.1" rpy="0 0 0" />
 
 </robot>
