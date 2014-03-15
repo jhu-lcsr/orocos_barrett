@@ -1,8 +1,8 @@
 <launch>
-  <!-- roslaunch arguments -->
-  <arg name="gui" default="true"/>
+  <description>This launchfile brings up a 7-DOF Barrett WAM robot in Gazebo with no controllers</description>
 
-  <!-- Start Gazebo -->
+  <arg name="gui" default="true" doc="Use the Gazebo GUI"/>
+
   <include file="$(find rtt_gazebo_examples)/test/empty_world.launch">
     <arg name="gui" value="$(arg gui)" />
     <arg name="paused" value="false"/>
@@ -11,11 +11,9 @@
     <arg name="world_name" value="$(find oro_barrett_sim)/test/wam.world"/>
   </include>
 
-  <!-- Load WAM UDRF onto parameter server -->
   <param name="robot_description" 
     command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/wam.urdf.xacro' ops_script:=$(find oro_barrett_sim)/test/wam.ops" />
 
-  <!-- Load WAM URDF into gazebo -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
     args="-urdf -model wam -param robot_description"/>
 

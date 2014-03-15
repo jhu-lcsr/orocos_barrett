@@ -1,9 +1,7 @@
 <launch>
-  <!-- roslaunch arguments -->
   <arg name="gui" default="true"/>
   <arg name="debug" default="false"/>
 
-  <!-- Start Gazebo -->
   <include file="$(find rtt_gazebo_examples)/test/empty_world.launch">
     <env name="ORO_LOGLEVEL" value="debug"/>
     <arg name="gui" value="$(arg gui)" />
@@ -17,7 +15,6 @@
   <param name="robot_description" 
     command="$(find xacro)/xacro.py '$(find oro_barrett_sim)/test/dual_wam_hand.urdf.xacro' ops_script:=$(find oro_barrett_sim)/test/dual_wam_hand.ops" />
 
-  <!-- Load WAM URDF into gazebo -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
     args="-urdf -model dual_wam_hand -param robot_description"/>
 
