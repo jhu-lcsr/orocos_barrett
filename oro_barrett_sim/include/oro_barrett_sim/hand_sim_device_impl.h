@@ -39,7 +39,7 @@ namespace oro_barrett_sim {
         urdf_prefix),
     gazebo_joints(joints),
     compliance_enabled(false),
-    breakaway_torque(1.5),
+    breakaway_torque(2.5),
     stop_torque(3),
     link_torque(4),
     fingertip_torque(4),
@@ -177,10 +177,10 @@ namespace oro_barrett_sim {
         fingertip_torque[i] = gazebo_joints[did]->GetForceTorque(0).body2Torque.z;
 
         //  Check for torque switch condition
-        if(joint_velocity[mid] < 0.5) {
+        if(joint_velocity[mid] < 0.2) {
           if(link_torque[i] > breakaway_torque) {
             torque_switches[i] = true;
-          } else if(link_torque[i] < -breakaway_torque) {
+          } else if(link_torque[i] < -breakaway_torque/2.0) {
             torque_switches[i] = false;
           }
         }
