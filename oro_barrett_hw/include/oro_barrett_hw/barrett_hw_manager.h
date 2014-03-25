@@ -63,6 +63,17 @@ namespace oro_barrett_hw {
     //! Get the real update period
     double getRealPeriod();
 
+  protected:
+    /** \brief Construct a WAM robot interface without checking if the component has been configured.
+     *
+     */
+    virtual bool configureWam4Protected(const std::string &urdf_prefix);
+
+    /** \brief Construct a WAM robot interface without checking if the component has been configured.
+     *
+     */
+    virtual bool configureWam7Protected(const std::string &urdf_prefix);
+
   private:
 
     /** \brief Configure a WAM robot on this bus
