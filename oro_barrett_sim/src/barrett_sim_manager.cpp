@@ -5,6 +5,8 @@
 
 #include <boost/assign/list_of.hpp>
 
+#include <rtt_rosparam/rosparam.h>
+
 using namespace oro_barrett_sim;
 
 BarrettSimManager::BarrettSimManager(const std::string &name) :
@@ -72,6 +74,18 @@ bool BarrettSimManager::configureHook()
 {
   RTT::Logger::Instance()->in("BarrettSimManager::configureHook");
 
+  // Get the rosparam service requester
+  boost::shared_ptr<rtt_rosparam::ROSParam> rosparam =
+    this->getProvider<rtt_rosparam::ROSParam>("rosparam");
+
+  if(!rosparam) {
+    RTT::log(RTT::Error) << "Could not load rosparam service." <<RTT::endlog();
+    return false;
+  }
+
+  // Get the ROS parameters
+  rosparam->getAllComponentPrivate();
+
   // Make sure the gazebo hook has been configured
   if(!gazebo_model_) {
     RTT::log(RTT::Error) << "No gazebo model defined." << RTT::endlog();
@@ -104,6 +118,9 @@ bool BarrettSimManager::configureHook()
           <<wam_dof_<<"." <<RTT::endlog();
         return false;
     };
+
+    // Get WAM ros parameters
+    rosparam->getComponentPrivate("wam");
   }
 
   // Auto-configure optional BHand
@@ -112,6 +129,9 @@ bool BarrettSimManager::configureHook()
       RTT::log(RTT::Error) << "Unable to auto-configure BHand with URDF prefix \""<<hand_urdf_prefix_<<"\"." <<RTT::endlog();
       return false;
     }
+    
+    // Get BHand ros parameters
+    rosparam->getComponentPrivate("hand");
   }
 
   return true;

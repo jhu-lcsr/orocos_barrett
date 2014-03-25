@@ -5,6 +5,8 @@
 
 #include <barrett/products/puck.h>
 
+#include <rtt_rosparam/rosparam.h>
+
 using namespace oro_barrett_hw;
 
 BarrettHWManager::BarrettHWManager(const std::string &name) :
@@ -25,6 +27,18 @@ BarrettHWManager::BarrettHWManager(const std::string &name) :
 
 bool BarrettHWManager::configureHook()
 {
+  // Get the rosparam service requester
+  boost::shared_ptr<rtt_rosparam::ROSParam> rosparam =
+    this->getProvider<rtt_rosparam::ROSParam>("rosparam");
+
+  if(!rosparam) {
+    RTT::log(RTT::Error) << "Could not load rosparam service." <<RTT::endlog();
+    return false;
+  }
+
+  // Get the ROS parameters
+  rosparam->getAllComponentPrivate();
+
   // Create a new bus
   try {
     if(!bus_manager_) {
@@ -86,6 +100,9 @@ bool BarrettHWManager::configureHook()
           <<wam_dof_<<"." <<RTT::endlog();
         return false;
     };
+
+    // Get WAM ros parameters
+    rosparam->getComponentPrivate("wam");
   }
 
   // Auto-configure optional BHand
@@ -94,6 +111,9 @@ bool BarrettHWManager::configureHook()
       RTT::log(RTT::Error) << "Unable to auto-configure BHand with URDF prefix \""<<hand_urdf_prefix_<<"\"." <<RTT::endlog();
       return false;
     }
+    
+    // Get BHand ros parameters
+    rosparam->getComponentPrivate("hand");
   }
 
   return true;
