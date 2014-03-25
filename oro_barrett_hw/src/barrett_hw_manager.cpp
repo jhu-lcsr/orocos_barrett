@@ -65,6 +65,37 @@ bool BarrettHWManager::configureHook()
     return false;
   }
 
+  // Auto-configure optional WAM
+  if(auto_configure_wam_) {
+    switch(wam_dof_) {
+      case 4: 
+        if(!this->cconfigureWam4Protected(wam_urdf_prefix_)) {
+          RTT::log(RTT::Error) << "Unable to auto-configure 4-DOF WAM with URDF prefix \""<<wam_urdf_prefix_<<"\"." <<RTT::endlog();
+          return false;
+        }
+        break;
+      case 7:
+        if(!this->configureWam7Protected(wam_urdf_prefix_)) {
+          RTT::log(RTT::Error) << "Unable to auto-configure 4-DOF WAM with URDF prefix \""<<wam_urdf_prefix_<<"\"." <<RTT::endlog();
+          return false;
+        }
+        break;
+      default:
+        RTT::log(RTT::Error) << "Unable to auto-configure WAM with URDF prefix "
+          "\""<<wam_urdf_prefix_<<"\". DOF should be 4 or 7, but it's "
+          <<wam_dof_<<"." <<RTT::endlog();
+        return false;
+    };
+  }
+
+  // Auto-configure optional BHand
+  if(auto_configure_hand_) {
+    if(!this->configureHand(hand_urdf_prefix_)) {
+      RTT::log(RTT::Error) << "Unable to auto-configure BHand with URDF prefix \""<<hand_urdf_prefix_<<"\"." <<RTT::endlog();
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -198,6 +229,11 @@ bool BarrettHWManager::configureWam4(const std::string &urdf_prefix)
     return false;
   }
 
+  return configureWam4Protected(urdf_prefix);
+}
+
+bool BarrettHWManager::configureWam4Protected(const std::string &urdf_prefix)
+{
   // Check for a 4-DOF WAM
   if(!barrett_manager_->foundWam4()) {
     RTT::log(RTT::Error) << "Could not find a requested 4-DOF WAM on bus" <<
@@ -212,6 +248,7 @@ bool BarrettHWManager::configureWam4(const std::string &urdf_prefix)
 
   return true;
 }
+
 bool BarrettHWManager::configureWam7(const std::string &urdf_prefix)
 {
   // Make sure we 're in the configured state, and not running
@@ -221,6 +258,11 @@ bool BarrettHWManager::configureWam7(const std::string &urdf_prefix)
     return false;
   }
 
+  return this->configureWam7Protected(urdf_prefix);
+}
+
+bool BarrettHWManager::configureWam7Protected(const std::string &urdf_prefix)
+{
   // Check for a 7-DOF WAM
   if(!barrett_manager_->foundWam7()) {
     RTT::log(RTT::Error) << "Could not find a requested 7-DOF WAM on bus" <<
