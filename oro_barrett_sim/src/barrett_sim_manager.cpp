@@ -12,7 +12,8 @@ using namespace oro_barrett_sim;
 BarrettSimManager::BarrettSimManager(const std::string &name) :
   oro_barrett_interface::BarrettManager(name),
   bus_id_(0),
-  config_path_("")
+  config_path_(""),
+  last_gz_update_time_(0,0)
 {
   this->addProperty("bus_id",bus_id_)
     .doc("The CANBus port [0-n]. (UNUSED)");
@@ -25,6 +26,7 @@ BarrettSimManager::BarrettSimManager(const std::string &name) :
   this->addProperty("write_duration",write_duration_);
 
   // Add required gazebo interfaces
+  this->provides("gazebo")->addProperty("last_gz_update_time",last_gz_update_time_);
   this->provides("gazebo")->addOperation("configure",&BarrettSimManager::gazeboConfigureHook,this,RTT::ClientThread);
   this->provides("gazebo")->addOperation("update",&BarrettSimManager::gazeboUpdateHook,this,RTT::ClientThread);
 }

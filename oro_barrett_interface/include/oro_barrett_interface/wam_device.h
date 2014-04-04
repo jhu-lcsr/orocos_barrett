@@ -83,14 +83,14 @@ namespace oro_barrett_interface {
       kdl_chain(),
       chain_dynamics(),
       
-      joint_position(DOF),
-      joint_velocity(DOF),
-      joint_acceleration(DOF),
-      joint_effort(DOF),
-      joint_effort_raw(DOF),
-      joint_effort_last(DOF),
-      joint_resolver_offset(DOF),
-      joint_calibration_burn_offsets(DOF),
+      joint_position(JointspaceVector::Zero(DOF)),
+      joint_velocity(JointspaceVector::Zero(DOF)),
+      joint_acceleration(JointspaceVector::Zero(DOF)),
+      joint_effort(JointspaceVector::Zero(DOF)),
+      joint_effort_raw(JointspaceVector::Zero(DOF)),
+      joint_effort_last(JointspaceVector::Zero(DOF)),
+      joint_resolver_offset(JointspaceVector::Zero(DOF)),
+      joint_calibration_burn_offsets(JointspaceVector::Zero(DOF)),
 
       // Throttles
       joint_state_throttle(0.01),
@@ -219,7 +219,6 @@ namespace oro_barrett_interface {
 
       // Construct a KDL chain dynamics solver
       chain_dynamics.reset(new KDL::ChainDynParam(kdl_chain, KDL::Vector(0,0,0)));
-
     }
 
     //! Removes the added "wam" service 

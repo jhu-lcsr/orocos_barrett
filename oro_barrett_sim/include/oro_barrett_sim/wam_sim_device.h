@@ -45,7 +45,9 @@ namespace oro_barrett_sim {
           urdf_model, 
           urdf_prefix),
       run_mode(IDLE),
-      gazebo_joints_(gazebo_joints)
+      gazebo_joints_(gazebo_joints),
+      raw_joint_position(Eigen::Matrix<double,DOF,1>::Zero(DOF)),
+      raw_joint_velocity(Eigen::Matrix<double,DOF,1>::Zero(DOF))
     {
     }
 
@@ -109,6 +111,7 @@ namespace oro_barrett_sim {
       // Write to data ports
       this->joint_position_out.write(this->joint_position);
       this->joint_velocity_out.write(this->joint_velocity);
+
 
       // Publish state to ROS 
       if(this->joint_state_throttle.ready(0.02)) 
