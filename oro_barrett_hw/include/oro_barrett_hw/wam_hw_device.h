@@ -14,6 +14,10 @@
 
 #include <angles/angles.h>
 
+#include <algorithm>
+
+#include "butterworth.h"
+
 namespace oro_barrett_hw {
 
   /** \brief State structure for a real WAM device
@@ -43,8 +47,11 @@ namespace oro_barrett_hw {
           urdf_model, 
           urdf_prefix),
       barrett_manager_(barrett_manager),
-      run_mode(IDLE)
+      run_mode(IDLE),
+      velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0))
     {
+      parent_service->provides("wam")->addProperty("velocity_cutoff",velocity_cutoff_).doc("The velocity cutoff frequencies.");
+
       // Wait for the wam
       barrett_manager->waitForWam(false);
 
@@ -64,6 +71,20 @@ namespace oro_barrett_hw {
 
       // Initialize resolver ranges
       this->computeResolverRanges();
+
+      this->setFilters();
+    }
+
+    virtual ~WamHWDevice()
+    {
+    }
+
+    virtual void setFilters()
+    {
+      velocity_filters_.resize(DOF);
+      for(unsigned i=0; i<DOF; i++) {
+        velocity_filters_[i] = boost::make_shared<Butterworth<double> >(2,velocity_cutoff_(i));
+      }
     }
 
     virtual void computeResolverRanges() 
@@ -92,9 +113,12 @@ namespace oro_barrett_hw {
     {
       // Disable resolver reading 
       this->read_resolver = false;
+      this->setFilters();
+
       if(run_mode != RUN) {
         run_mode = RUN;
       }
+
     }
 
     virtual void idle()
@@ -111,6 +135,10 @@ namespace oro_barrett_hw {
 
     virtual void readDevice(ros::Time time, RTT::Seconds period)
     {
+      if(period <= 0) {
+        return;
+      }
+
       // Poll the hardware
       try {
         interface->update();
@@ -136,10 +164,17 @@ namespace oro_barrett_hw {
       Eigen::Matrix<double,DOF,1> raw_joint_position = interface->getJointPositions();
       Eigen::Matrix<double,DOF,1> raw_joint_velocity = interface->getJointVelocities();
 
+#if 0
       // Exponentially smooth velocity 
       this->joint_velocity = 
         this->velocity_smoothing_factor*this->joint_velocity 
         + (1.0 - this->velocity_smoothing_factor)*raw_joint_velocity;
+#else
+      // Butterworth the velocity
+      for(unsigned i=0; i<DOF; i++) {
+        this->joint_velocity(i) = this->velocity_filters_[i]->eval(raw_joint_velocity(i));
+      }
+#endif
 
       // Store position
       this->joint_position = raw_joint_position;
@@ -150,7 +185,7 @@ namespace oro_barrett_hw {
       this->joint_velocity_out.write(this->joint_velocity);
 
       // Publish state to ROS 
-      if(this->joint_state_throttle.ready(0.02)) {
+      if(this->joint_state_throttle.ready(0.01)) {
         // Update the joint state message
         this->joint_state.header.stamp = rtt_rosclock::host_now();
         this->joint_state.name = this->joint_names;
@@ -287,6 +322,9 @@ namespace oro_barrett_hw {
     std::vector<barrett::Puck*> wam_pucks;
     boost::shared_ptr<barrett::ProductManager> barrett_manager_;
     RunMode run_mode;
+
+    std::vector<boost::shared_ptr<Butterworth<double> > > velocity_filters_;
+    Eigen::VectorXd velocity_cutoff_;
   };
 
 }

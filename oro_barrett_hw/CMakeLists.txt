@@ -35,10 +35,14 @@ if("$ENV{OROCOS_TARGET}" STREQUAL "xenomai")
 
   link_directories(${BARRETT_LIBRARY_DIRS})
 
+  add_library(butterworth
+    src/butterworth_solver.c)
+
   orocos_component(barrett_hw_manager
     src/barrett_hw_manager.cpp)
   message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
   target_link_libraries(barrett_hw_manager
+    butterworth
     ${kdl_parser_LIBRARIES}
     ${urdf_LIBRARIES}
     ${USE_OROCOS_LIBRARIES}

@@ -20,7 +20,7 @@
       wam:
         velocity_smoothing_factor: 0.95
         home_position: [0.0, -1.5708, 0.0, 3.1415, 0.0, -1.5708, 1.5708]
-        resolver_offset: [0.42644, 0.62126, 0.96947, -1.23025,  1.81463, 0.59365, 2.4942]
+        home_resolver_offset: [0.42644, 0.62126, 0.96947, -1.23025,  1.81463, 0.59365, 2.4942]
     </rosparam>
 
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="wam_state_publisher">
