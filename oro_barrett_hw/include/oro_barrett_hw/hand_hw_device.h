@@ -175,7 +175,7 @@ namespace oro_barrett_hw {
     //! Minimum execution period. This runs at 10Hz before hand initialization and 30Hz afterwards.
     RTT::Seconds min_period;
     //! Measured execution times
-    RTT::Seconds last_read_time, last_write_time;
+    ros::Time last_read_time, last_write_time;
     
 
     const std::vector<barrett::Puck*>& pucks;
@@ -236,7 +236,7 @@ namespace oro_barrett_hw {
     center_of_mass_out.write(center_of_mass);
 
     // Limit other oeprations
-    if(time - last_read_time < min_period) {
+    if((time - last_read_time).toSec() < min_period) {
       return;
     }
 

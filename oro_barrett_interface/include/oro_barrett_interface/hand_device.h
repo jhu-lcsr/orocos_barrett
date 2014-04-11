@@ -116,25 +116,14 @@ namespace oro_barrett_interface {
 
   protected:
 
+    //! RTT Service for BHand interfaces
+    RTT::Service::shared_ptr parent_service_;
+
     //! The current run mode
     RunMode run_mode;
 
     //! The current initialization state
     InitState init_state;
-
-    //! Mode bitmasks
-    unsigned int 
-      mode_torque,
-      mode_position,
-      mode_velocity,
-      mode_trapezoidal;
-
-    //! Flag desingating any modes have changed
-    bool modes_changed;
-
-
-    //! RTT Service for BHand interfaces
-    RTT::Service::shared_ptr parent_service_;
 
     //! \name Configuration & State
     //\{
@@ -159,6 +148,16 @@ namespace oro_barrett_interface {
       joint_velocity_cmd,
       joint_trapezoidal_cmd,
       center_of_mass;
+
+    //! Mode bitmasks
+    unsigned int 
+      mode_torque,
+      mode_position,
+      mode_velocity,
+      mode_trapezoidal;
+
+    //! Flag desingating any modes have changed
+    bool modes_changed;
 
     std::map<std::string, double> q_map;
     geometry_msgs::PoseStamped com_msg;
@@ -211,6 +210,8 @@ namespace oro_barrett_interface {
         const std::string &urdf_prefix_) :
     parent_service_(parent_service),
 
+    run_mode(IDLE),
+
     joint_actuation(8),
 
     urdf_prefix(urdf_prefix_),
@@ -223,15 +224,13 @@ namespace oro_barrett_interface {
     joint_trapezoidal_cmd(4),
     center_of_mass(4),
 
-    knuckle_torque(4),
-
-    run_mode(IDLE),
-
     mode_torque(0x0),
     mode_position(0x0),
     mode_velocity(0x0),
     mode_trapezoidal(0x0),
     modes_changed(false),
+
+    knuckle_torque(4),
 
     // Throttles
     joint_state_throttle(0.01)

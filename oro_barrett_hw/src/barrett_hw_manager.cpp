@@ -83,7 +83,7 @@ bool BarrettHWManager::configureHook()
   if(auto_configure_wam_) {
     switch(wam_dof_) {
       case 4: 
-        if(!this->cconfigureWam4Protected(wam_urdf_prefix_)) {
+        if(!this->configureWam4Protected(wam_urdf_prefix_)) {
           RTT::log(RTT::Error) << "Unable to auto-configure 4-DOF WAM with URDF prefix \""<<wam_urdf_prefix_<<"\"." <<RTT::endlog();
           return false;
         }

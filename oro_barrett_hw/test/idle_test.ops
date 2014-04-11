@@ -10,30 +10,4 @@ barrett_manager.rosparam.getAll();
 barrett_manager.rosparam.getAbsolute("robot_description");
 
 barrett_manager.configure();
-barrett_manager.configureWam7("wam");
-
-/* Set home positions */
-barrett_manager.wam.home_position[0] = 0.0;
-barrett_manager.wam.home_position[1] = -1.5708;
-barrett_manager.wam.home_position[2] = 0.0;
-barrett_manager.wam.home_position[3] = 3.1415;
-barrett_manager.wam.home_position[4] = 0.0;
-barrett_manager.wam.home_position[5] = -1.5708;
-barrett_manager.wam.home_position[6] = 1.5708;
-
-/* Set home resolver positions */
-barrett_manager.wam.home_resolver_offset[0] =  0.42644;
-barrett_manager.wam.home_resolver_offset[1] = 0.62126;
-barrett_manager.wam.home_resolver_offset[2] = 0.96947;
-barrett_manager.wam.home_resolver_offset[3] = -1.23025;
-barrett_manager.wam.home_resolver_offset[4] = 1.81463;
-barrett_manager.wam.home_resolver_offset[5] = 0.59365;
-barrett_manager.wam.home_resolver_offset[6] = 2.4942;
-
-/* Publish joint state to ROS */
-stream("barrett_manager.wam.joint_state_out",rostopic.connection("joint_states"));
-
 barrett_manager.start();
-
-/* Calibrate joint positions */
-// barrett_manager.wam.calibrateNearHome()

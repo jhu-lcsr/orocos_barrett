@@ -110,7 +110,7 @@ namespace oro_barrett_hw {
     boost::shared_ptr<oro_barrett_interface::HandDevice> hand_device_;
     //\}
 
-    RTT::Seconds last_update_time_;
+    ros::Time last_update_time_;
     RTT::Seconds period_;
     RTT::Seconds read_duration_;
     RTT::Seconds write_duration_;
