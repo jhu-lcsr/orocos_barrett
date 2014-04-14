@@ -48,9 +48,11 @@ namespace oro_barrett_hw {
           urdf_prefix),
       barrett_manager_(barrett_manager),
       run_mode(IDLE),
-      velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0))
+      velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0)),
+      torque_scales_(Eigen::VectorXd::Constant(DOF, 1.0))
     {
       parent_service->provides("wam")->addProperty("velocity_cutoff",velocity_cutoff_).doc("The velocity cutoff frequencies.");
+      parent_service->provides("wam")->addProperty("torque_scales",torque_scales_).doc("The torque constant scaling factors.");
 
       // Wait for the wam
       barrett_manager->waitForWam(false);
@@ -282,7 +284,8 @@ namespace oro_barrett_hw {
       // Check effort limits
       for(size_t i=0; i<DOF; i++) {
         // Check if the joint effort is too high
-        if(std::abs(this->joint_effort(i)) > this->warning_fault_ratio*this->joint_effort_limits[i]) {
+        if(std::abs(this->joint_effort(i)) > this->warning_fault_ratio*this->joint_effort_limits[i]) 
+        {
           if(this->warning_count[i] % 1000 == 0) {
             // This warning can kill heartbeats
             RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
@@ -306,7 +309,8 @@ namespace oro_barrett_hw {
       }
 
       // Set the torques
-      interface->setTorques(this->joint_effort);
+      this->joint_effort_scaled = this->torque_scales_.array() * this->joint_effort.array();
+      interface->setTorques(this->joint_effort_scaled);
 
       // Save the last effort command
       this->joint_effort_last = this->joint_effort;
@@ -325,6 +329,7 @@ namespace oro_barrett_hw {
 
     std::vector<boost::shared_ptr<Butterworth<double> > > velocity_filters_;
     Eigen::VectorXd velocity_cutoff_;
+    Eigen::VectorXd torque_scales_;
   };
 
 }
