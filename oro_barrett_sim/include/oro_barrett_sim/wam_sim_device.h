@@ -136,8 +136,9 @@ namespace oro_barrett_sim {
         Eigen::VectorXd joint_effort_tmp(DOF);
         bool new_effort_cmd = this->joint_effort_in.readNewest(joint_effort_tmp) == RTT::NewData;
 
-        // Do nothing if there's no new command
+        // Set the command to zero if there's no new command
         if(!new_effort_cmd) {
+          this->joint_effort.setZero();
           return;
         }
       
