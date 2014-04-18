@@ -117,6 +117,20 @@ namespace oro_barrett_hw {
 
     barrett::SafetyModule::SafetyMode safety_mode_;
 
+    //! An RTT thread class for low level IO
+    class BarrettDeviceThread : public RTT::os::Thread
+    {
+    public:
+      BarrettDeviceThread(BarrettHWManager *owner);
+    protected:
+      virtual void initialize();
+      virtual void loop();
+      virtual void finalize();
+    private:
+      RTT::os::Semaphore break_loop_sem_;
+      RTT::os::Semaphore done_sem_;
+    };
+
     //! An RTT timer class for polling / waiting for a given mode
     class BarrettModeTimer : public RTT::os::Timer 
     {
