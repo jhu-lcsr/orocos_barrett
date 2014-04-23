@@ -124,6 +124,13 @@ namespace oro_barrett_hw {
 
     barrett::SafetyModule::SafetyMode safety_mode_;
 
+    bool new_state_;
+    RTT::os::Mutex new_state_mutex_;
+    RTT::os::Condition new_state_cond_;
+
+    bool new_cmd_;
+    RTT::os::Mutex new_cmd_mutex_;
+
     //! An RTT thread class for low level IO
     class BarrettDeviceThread : public RTT::os::Thread
     {

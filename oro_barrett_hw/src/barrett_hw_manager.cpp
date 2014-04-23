@@ -42,6 +42,23 @@ bool BarrettHWManager::configureHook()
   // Get the ROS parameters
   rosparam->getAllComponentPrivate();
 
+  // Parse URDF from string
+  if(!urdf_model_.initString(urdf_str_)) {
+    return false;
+  }
+
+  return device_thread_.start();
+}
+
+bool BarrettHWManager::startHook()
+{
+  // Initialize the last update time
+  last_update_time_ = rtt_rosclock::rtt_now();
+}
+
+bool BarrettHWManager::deviceStartHook()
+{
+
   // Create a new bus
   try {
     if(!bus_manager_) {
@@ -51,6 +68,7 @@ bool BarrettHWManager::configureHook()
     RTT::log(RTT::Error) << "Could not initialize barret CANBus interface on bus "<<bus_id_<<": " << err.what() << RTT::endlog();
     return false;
   }
+
 
   // Create a new manager
   try {
@@ -77,13 +95,13 @@ bool BarrettHWManager::configureHook()
     return false;
   }
 
-  // Parse URDF from string
-  if(!urdf_model_.initString(urdf_str_)) {
-    return false;
-  }
+  boost::shared_ptr<rtt_rosparam::ROSParam> rosparam =
+    this->getProvider<rtt_rosparam::ROSParam>("rosparam");
+
 
   // Auto-configure optional WAM
   if(auto_configure_wam_) {
+    
     switch(wam_dof_) {
       case 4: 
         if(!this->configureWam4Protected(wam_urdf_prefix_)) {
@@ -119,18 +137,8 @@ bool BarrettHWManager::configureHook()
     rosparam->getComponentPrivate("hand");
   }
 
-  return true;
-}
-
-bool BarrettHWManager::startHook()
-{
-  return device_thread_.start();
-}
-
-bool BarrettHWManager::deviceStartHook()
-{
-  // Initialize the last update time
-  last_update_time_ = rtt_rosclock::rtt_now();
+  //// Initialize the last update time
+  //last_update_time_ = rtt_rosclock::rtt_now();
 
   /*if(!this->waitForMode(barrett::SafetyModule::ACTIVE)) {*/
   /*RTT::log(RTT::Error) << "Could not start Barrett Hardware, the safety "*/
@@ -169,19 +177,28 @@ void BarrettHWManager::updateHook()
   // this thread to provide it with a new command. If one isn't ready, then
   // it does not send a command.
   
-  // Read the command from the input ports
-  if(wam_device_) { wam_device_->readPorts(); }
-  if(hand_device_) { hand_device_->readPorts(); }
+  {
+    // Read the command from the input ports
+    if(wam_device_) { wam_device_->readPorts(); }
+    if(hand_device_) { hand_device_->readPorts(); }
 
-  // Signal that a new command is ready
-  new_cmd_sem_.signal();
+    // Signal that a new command is ready
+    RTT::os::MutexLock lock(new_cmd_mutex_);
+    new_cmd_ = true;
+  }
   
-  // Wait for new state from the device thread
-  new_state_sem_.wait();
+  {
+    // Wait for new state from the device thread
+    RTT::os::MutexLock lock(new_state_mutex_);
+    if(!new_state_) {
+      new_state_cond_.wait(new_state_mutex_);
+    }
+    new_state_ = false;
 
-  // Write the state to the output ports
-  if(wam_device_) { wam_device_->writePorts(); }
-  if(hand_device_) { hand_device_->writePorts(); }
+    // Write the state to the output ports
+    if(wam_device_) { wam_device_->writePorts(); }
+    if(hand_device_) { hand_device_->writePorts(); }
+  }
 }
 
 void BarrettHWManager::stopHook()
@@ -348,8 +365,8 @@ BarrettHWManager::BarrettDeviceThread::BarrettDeviceThread(BarrettHWManager *own
   : RTT::os::Thread(
       ORO_SCHED_RT, 
       RTT::os::HighestPriority, 
-      0.0005, // Run as fast as possible (1KHz)
-      0, // Use bus id for cpu affinity
+      0.001, // Run as fast as possible (1KHz)
+      1 << 4, // Use bus id for cpu affinity
       owner->getName()+"-device-thread"),
     owner_(owner),
     break_loop_sem_(0),
@@ -359,8 +376,6 @@ BarrettHWManager::BarrettDeviceThread::BarrettDeviceThread(BarrettHWManager *own
 
 bool BarrettHWManager::BarrettDeviceThread::initialize()
 { 
-  break_loop_sem_ = RTT::os::Semaphore(0); 
-
   return owner_->deviceStartHook();
 }
 
@@ -371,61 +386,70 @@ void BarrettHWManager::deviceUpdateHook()
   period_ = period;
 
   // Read
-  RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
-  if(wam_device_) {
-    try {
-      // Read the state estimation
-      wam_device_->readDevice(time,period);
-      // Flush the buffers if the safety mode switched to idle
-      if(wam_device_->getSafetyMode() == barrett::SafetyModule::IDLE 
-         && wam_device_->getSafetyMode() != safety_mode_) 
-      {
-        bus_manager_->flushBuffers();
-      }
-      // Store the new safety mode
-      safety_mode_ = (barrett::SafetyModule::SafetyMode)wam_device_->getSafetyMode();
-    } catch(std::runtime_error &err) {
-      RTT::log(RTT::Error) << "Could not read the WAM state: " << err.what() << RTT::endlog();
-      this->error();
-    }
-  }
-  if(hand_device_) {
-    try {
-      // Read the state estimation
-      hand_device_->readDevice(time,period);
-    } catch(std::runtime_error &err) {
-      RTT::log(RTT::Error) << "Could not read the BHand state: " << err.what() << RTT::endlog();
-      this->error();
-    }
-  }
-  read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
+  {
+    RTT::os::MutexLock lock(new_state_mutex_);
 
-  // Signal the new state
-  new_state_sem_.signal();
-
-  // Check for the new command, if there isn't one, then don't write one
-  if(new_cmd_sem_.trywait()) {
-    // Write
-    RTT::os::TimeService::ticks write_start = RTT::os::TimeService::Instance()->getTicks();
+    RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
     if(wam_device_) {
       try {
-        // Write the control command (force the write if the system is idle)
-        wam_device_->writeDevice(time,period);
+        // Read the state estimation
+        wam_device_->readDevice(time,period);
+        // Flush the buffers if the safety mode switched to idle
+        if(wam_device_->getSafetyMode() == barrett::SafetyModule::IDLE 
+           && wam_device_->getSafetyMode() != safety_mode_) 
+        {
+          bus_manager_->flushBuffers();
+        }
+        // Store the new safety mode
+        safety_mode_ = (barrett::SafetyModule::SafetyMode)wam_device_->getSafetyMode();
       } catch(std::runtime_error &err) {
-        RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
+        RTT::log(RTT::Error) << "Could not read the WAM state: " << err.what() << RTT::endlog();
         this->error();
       }
     }
     if(hand_device_) {
       try {
-        // Write the control command (force the write if the system is idle)
-        hand_device_->writeDevice(time,period);
+        // Read the state estimation
+        hand_device_->readDevice(time,period);
       } catch(std::runtime_error &err) {
-        RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
+        RTT::log(RTT::Error) << "Could not read the BHand state: " << err.what() << RTT::endlog();
         this->error();
       }
     }
-    write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
+    read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
+
+    // Signal the new state
+    new_state_ = true;
+    new_state_cond_.broadcast();
+  }
+
+  // Write
+  {
+    RTT::os::MutexLock lock(new_cmd_mutex_);
+    if(new_cmd_) {
+      RTT::os::TimeService::ticks write_start = RTT::os::TimeService::Instance()->getTicks();
+      if(wam_device_) {
+        try {
+          // Write the control command (force the write if the system is idle)
+          wam_device_->writeDevice(time,period);
+        } catch(std::runtime_error &err) {
+          RTT::log(RTT::Error) << "Could not write the WAM command: " << err.what() << RTT::endlog();
+          this->error();
+        }
+      }
+      if(hand_device_) {
+        try {
+          // Write the control command (force the write if the system is idle)
+          hand_device_->writeDevice(time,period);
+        } catch(std::runtime_error &err) {
+          RTT::log(RTT::Error) << "Could not write the BHand command: " << err.what() << RTT::endlog();
+          this->error();
+        }
+      }
+      write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
+
+      new_cmd_ = false;
+    } 
   }
 
   last_update_time_ = time;
@@ -433,21 +457,18 @@ void BarrettHWManager::deviceUpdateHook()
 
 void BarrettHWManager::BarrettDeviceThread::loop()
 {
-  while(!break_loop_sem_.trywait()) 
-  {
-    owner_->deviceUpdateHook();
-  }
 }
 
 void BarrettHWManager::BarrettDeviceThread::step()
 {
-  owner_->deviceUpdateHook();
+  if(owner_->isRunning()) {
+    owner_->deviceUpdateHook();
+  }
 }
 
 bool BarrettHWManager::BarrettDeviceThread::breakLoop()
 {
-  break_loop_sem_.signal();
-  return done_sem_.waitUntil(1.0);
+  return true;
 }
 
 void BarrettHWManager::BarrettDeviceThread::finalize()
