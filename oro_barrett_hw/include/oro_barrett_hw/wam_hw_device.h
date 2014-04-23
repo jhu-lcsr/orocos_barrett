@@ -50,7 +50,8 @@ namespace oro_barrett_hw {
       run_mode(IDLE),
       velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0)),
       torque_scales_(Eigen::VectorXd::Constant(DOF, 1.0)),
-      posevel_buffer_(1),
+      position_buffer_(1),
+      velocity_buffer_(1),
       torque_buffer_(1)
     {
       parent_service->provides("wam")->addProperty("velocity_cutoff",velocity_cutoff_).doc("The velocity cutoff frequencies.");
@@ -172,24 +173,68 @@ namespace oro_barrett_hw {
       }
 
       // Store position & velocity in buffer
-      KDL::JntArrayVel posevel;
-      posvel.q.data = raw_joint_position;
-      posvel.qdot.data = raw_joint_velocity;
-      posvel_buffer_.push(posvel);
+      position_buffer_.Push(raw_joint_position);
+      velocity_buffer_.Push(raw_joint_velocity);
     }
 
     virtual void writeDevice(ros::Time time, RTT::Seconds period)
     {
       // Read joint torques from buffer
-      KDL::JntArray torques;
-      if(toruqe_buffer_.pop(toruqes)) {
+      // TODO: static allocation
+      Eigen::VectorXd torques;
+      if(torque_buffer_.Pop(torques)) {
         // Set the torques
-        this->joint_effort_scaled = this->torque_scales_.array() * torques.data.array();
+        this->joint_effort_scaled = this->torque_scales_.array() * torques.array();
         interface->setTorques(this->joint_effort_scaled);
       }
     }
 
-    void updatePorts()
+    //! Write to output ports
+    void writePorts()
+    {
+      // Read the most recent state from the robot
+      if(position_buffer_.Pop(this->joint_position) && velocity_buffer_.Pop(this->joint_velocity))
+      {
+        // Write to data ports
+        this->joint_position_out.write(this->joint_position);
+        this->joint_velocity_out.write(this->joint_velocity);
+
+        // Publish state to ROS 
+        if(this->joint_state_throttle.ready(0.01)) 
+        {
+          // Update the joint state message
+          this->joint_state.header.stamp = rtt_rosclock::host_now();
+          this->joint_state.name = this->joint_names;
+          Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),DOF) = this->joint_position;
+          Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),DOF) = this->joint_velocity;
+          Eigen::Map<Eigen::VectorXd>(this->joint_state.effort.data(),DOF) = this->joint_effort;
+            
+          // Publish
+          this->joint_state_out.write(this->joint_state);
+
+          // Read resolver angles
+          if(this->read_resolver) {
+            std::vector<barrett::Puck*> pucks = interface->getPucks();	
+            for(size_t i=0; i<pucks.size(); i++) {
+              this->joint_resolver_offset(i) = angles::normalize_angle(
+                  interface->getMotorPucks()[i].counts2rad(pucks[i]->getProperty(barrett::Puck::MECH)));
+            }
+            
+            // Update the joint state message
+            this->joint_resolver_state.header.stamp = rtt_rosclock::host_now();
+            this->joint_resolver_state.name = this->joint_names;
+            Eigen::Map<Eigen::VectorXd>(this->joint_resolver_state.position.data(),DOF) = this->joint_resolver_offset;
+
+            // Publish
+            this->joint_resolver_offset_out.write(this->joint_resolver_offset);
+            this->joint_resolver_state_out.write(this->joint_resolver_state);
+          }
+        }
+      }
+    }
+
+    //! Read from input ports
+    void readPorts()
     {
       // Check if the effort command port is connected
       if(this->joint_effort_in.connected()) 
@@ -281,59 +326,13 @@ namespace oro_barrett_hw {
       }
 
       // Push the torque command 
-      KDL::JntArray joint_torque;
-      joint_torque.data = this->joint_effort;
       torque_buffer_.clear();
-      toruqe_buffer_.push(joint_torque);
+      torque_buffer_.Push(this->joint_effort);
 
       // Save the last effort command
       this->joint_effort_last = this->joint_effort;
       // Pass along commanded effort for anyone who cares
       this->joint_effort_out.write(this->joint_effort);
-
-      // Read the most recent state from the robot
-      KDL::JntArrayVel joint_posevel;
-      if(posvel_buffer_.pop(joint_posevel))
-      {
-        this->joint_position = joint_posevel.q.data;
-        this->joint_position = joint_posevel.qdot.data;
-
-        // Write to data ports
-        this->joint_position_out.write(this->joint_position);
-        this->joint_velocity_out.write(this->joint_velocity);
-
-        // Publish state to ROS 
-        if(this->joint_state_throttle.ready(0.01)) 
-        {
-          // Update the joint state message
-          this->joint_state.header.stamp = rtt_rosclock::host_now();
-          this->joint_state.name = this->joint_names;
-          Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),DOF) = this->joint_position;
-          Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),DOF) = this->joint_velocity;
-          Eigen::Map<Eigen::VectorXd>(this->joint_state.effort.data(),DOF) = this->joint_effort;
-            
-          // Publish
-          this->joint_state_out.write(this->joint_state);
-
-          // Read resolver angles
-          if(this->read_resolver) {
-            std::vector<barrett::Puck*> pucks = interface->getPucks();	
-            for(size_t i=0; i<pucks.size(); i++) {
-              this->joint_resolver_offset(i) = angles::normalize_angle(
-                  interface->getMotorPucks()[i].counts2rad(pucks[i]->getProperty(barrett::Puck::MECH)));
-            }
-            
-            // Update the joint state message
-            this->joint_resolver_state.header.stamp = rtt_rosclock::host_now();
-            this->joint_resolver_state.name = this->joint_names;
-            Eigen::Map<Eigen::VectorXd>(this->joint_resolver_state.position.data(),DOF) = this->joint_resolver_offset;
-
-            // Publish
-            this->joint_resolver_offset_out.write(this->joint_resolver_offset);
-            this->joint_resolver_state_out.write(this->joint_resolver_state);
-          }
-        }
-      }
     }
 
   protected:
@@ -347,8 +346,9 @@ namespace oro_barrett_hw {
     Eigen::VectorXd velocity_cutoff_;
     Eigen::VectorXd torque_scales_;
 
-    RTT::base::Buffer<KDL::JntArrayVel> posvel_buffer_;
-    RTT::base::Buffer<KDL::JntArray> torque_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> position_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> velocity_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> torque_buffer_;
   };
 
 }

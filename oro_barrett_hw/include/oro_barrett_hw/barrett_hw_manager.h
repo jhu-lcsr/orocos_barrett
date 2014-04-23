@@ -63,6 +63,13 @@ namespace oro_barrett_hw {
     //! Get the real update period
     double getRealPeriod();
 
+    //! Get the bus ID
+    int getBusID() { return bus_id_; } 
+
+    bool deviceStartHook();
+    void deviceUpdateHook();
+    void deviceStopHook();
+
   protected:
     /** \brief Construct a WAM robot interface without checking if the component has been configured.
      *
@@ -122,14 +129,24 @@ namespace oro_barrett_hw {
     {
     public:
       BarrettDeviceThread(BarrettHWManager *owner);
+      BarrettHWManager *owner_;
     protected:
-      virtual void initialize();
+      virtual bool initialize();
       virtual void loop();
+      virtual void step();
+      virtual bool breakLoop();
       virtual void finalize();
-    private:
+
       RTT::os::Semaphore break_loop_sem_;
       RTT::os::Semaphore done_sem_;
     };
+
+    BarrettDeviceThread device_thread_;
+
+    // Threading synchronization
+    RTT::os::Semaphore new_state_sem_;
+    RTT::os::Semaphore new_cmd_sem_;
+
 
     //! An RTT timer class for polling / waiting for a given mode
     class BarrettModeTimer : public RTT::os::Timer 
