@@ -427,20 +427,9 @@ namespace oro_barrett_hw {
 
           bool new_joint_cmd = joint_cmd_buffer_.Pop(joint_cmd);
 
-          // Update the modes if they've changed
-          if(modes_changed) 
-          {
-            RTT::log(RTT::Debug) << "Hand command modes changed." <<RTT::endlog();
-            interface->setTorqueMode(mode_torque);
-            interface->setPositionMode(mode_position);
-            interface->setVelocityMode(mode_velocity);
-            interface->setTrapezoidalMode(mode_trapezoidal);
-            modes_changed = false;
-          }
-
           // Parse the ROS command into command vectors and update modes if necessary
           if(new_joint_cmd) 
-         {
+          {
             joint_torque_cmd.setZero();
             joint_position_cmd.setZero();
             joint_velocity_cmd.setZero();
@@ -470,6 +459,17 @@ namespace oro_barrett_hw {
                   break;
               };
             }
+          }
+
+          // Update the modes if they've changed
+          if(modes_changed) 
+          {
+            RTT::log(RTT::Debug) << "Hand command modes changed." <<RTT::endlog();
+            interface->setTorqueMode(mode_torque);
+            interface->setPositionMode(mode_position);
+            interface->setVelocityMode(mode_velocity);
+            interface->setTrapezoidalMode(mode_trapezoidal);
+            modes_changed = false;
           }
 
           // Send commands
