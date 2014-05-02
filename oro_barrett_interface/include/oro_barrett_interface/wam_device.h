@@ -88,6 +88,7 @@ namespace oro_barrett_interface {
       joint_acceleration(JointspaceVector::Zero(DOF)),
       joint_effort(JointspaceVector::Zero(DOF)),
       joint_effort_raw(JointspaceVector::Zero(DOF)),
+      joint_effort_scaled(JointspaceVector::Zero(DOF)),
       joint_effort_last(JointspaceVector::Zero(DOF)),
       joint_resolver_offset(JointspaceVector::Zero(DOF)),
       joint_calibration_burn_offsets(JointspaceVector::Zero(DOF)),
@@ -119,6 +120,7 @@ namespace oro_barrett_interface {
 
       // Attributes
       wam_service->addAttribute("effort_raw",joint_effort_raw);
+      wam_service->addAttribute("effort_scaled",joint_effort_scaled);
       wam_service->addAttribute("effort",joint_effort);
       wam_service->addAttribute("warning_count",warning_count);
 
@@ -239,6 +241,7 @@ namespace oro_barrett_interface {
       joint_effort.setZero();
       joint_effort_last.setZero();
       joint_effort_raw.setZero();
+      joint_effort_scaled.setZero();
       joint_resolver_offset.setZero();
       joint_calibration_burn_offsets.setZero();
     }
@@ -293,6 +296,7 @@ namespace oro_barrett_interface {
       joint_acceleration,
       joint_effort,
       joint_effort_raw,
+      joint_effort_scaled,
       joint_effort_last,
       joint_resolver_offset,
       joint_calibration_burn_offsets;
