@@ -1764,7 +1764,7 @@
   <customwidget>
    <class>QwtThermo</class>
    <extends>QWidget</extends>
-   <header>PyQt4.Qwt5.Qwt</header>
+   <header>python_qt_binding.Qwt.Qwt</header>
   </customwidget>
  </customwidgets>
  <resources/>
