@@ -3,12 +3,13 @@ import rospy
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QWidget
-from python_qt_binding.QtGui import QPalette,QColor
-from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QWidget,QPalette,QColor
+from python_qt_binding.QtCore import Qt,QTimer,Signal
 import random
 
-import std_msgs.msg
+import sensor_msgs.msg
+
+from urdf_parser_py.urdf import URDF
 
 class BarrettDashboard(Plugin):
 
@@ -61,21 +62,24 @@ class BarrettDashboard(Plugin):
         tn_widgets = [getattr(self._widget,'tn_%d' % i) for i in range(7)]
         self.torque_widgets = zip(tp_widgets,tn_widgets)
 
+        self.joint_signals = []
+        self.torque_signals = []
+
         for (tp,tn) in self.torque_widgets:
             tp.setRange(0.0,1.0,False)
             tn.setRange(1.0,0.0,False)
             # set random values for testing
-            v = (2.0*random.random()) - 1.0
-            tp.setValue(v if v >=0 else 0)
-            tn.setValue(-v if v <0 else 0)
+            #v = (2.0*random.random()) - 1.0
+            #tp.setValue(v if v >=0 else 0)
+            #tn.setValue(-v if v <0 else 0)
 
         for (jp,jn) in self.joint_widgets:
             jp.setRange(0.0,1.0,False)
             jn.setRange(1.0,0.0,False)
             # set random values for testing
-            v = (2.0*random.random()) - 1.0
-            jp.setValue(v if v >=0 else 0)
-            jn.setValue(-v if v <0 else 0)
+            #v = (2.0*random.random()) - 1.0
+            #jp.setValue(v if v >=0 else 0)
+            #jn.setValue(-v if v <0 else 0)
 
         background_color = Qt.black
         joint_fill_color = QColor(80,148,204)
@@ -99,7 +103,34 @@ class BarrettDashboard(Plugin):
             p.setColor(tp.backgroundRole(), p.mid().color())
             w.setPalette(p)
 
+        self.urdf = rospy.get_param('robot_description')
+        self.robot = URDF()
+        self.robot = self.robot.from_xml_string(self.urdf)
+
+        self.pos_norm = [0] * 7
+        self.torque_norm = [0] * 7
+
+        self._dotcode_sub = rospy.Subscriber(
+                'joint_states',
+                sensor_msgs.msg.JointState,
+                self._joint_state_cb)
+
+        self.update_timer = QTimer(self)
+        self.update_timer.setInterval(50)
+        self.update_timer.timeout.connect(self._update_widget_values)
+        self.update_timer.start()
+
         #self._widget.subscribe_button.clicked[bool].connect(self._handle_subscribe_clicked)
+
+    def _update_widget_values(self):
+
+        for (v,(tp,tn)) in zip(self.torque_norm,self.torque_widgets):
+            tp.setValue(v if v >=0 else 0)
+            tn.setValue(-v if v <0 else 0)
+
+        for (v,(jp,jn)) in zip(self.pos_norm,self.joint_widgets):
+            jp.setValue(v if v >=0 else 0)
+            jn.setValue(-v if v <0 else 0)
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
@@ -120,21 +151,13 @@ class BarrettDashboard(Plugin):
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
 
-    def _handle_subscribe_clicked(self, checked):
-        if checked:
-            topic_name = self._widget.topic_name.text()
-            if len(topic_name) > 0:
-                self._dotcode_sub = rospy.Subscriber(
-                        topic_name,
-                        std_msgs.msg.String,
-                        self._dotcode_msg_cb)
-            else:
-                return False
-        else:
-            if self._dotcode_sub:
-                self._dotcode_sub.unregister()
-                self._dotcode_sub = None
+    def _joint_state_cb(self, msg):
+        joint_pos_map = dict(zip(msg.name, msg.position))
 
-    def _dotcode_msg_cb(self, msg):
-        self._widget.xdot_widget.set_dotcode(msg.data)
-    
+        for (name,pos,torque,i) in zip(msg.name,msg.position,msg.effort,range(7)):
+            joint = self.robot.joint_map[name]
+            self.pos_norm[i] = 2.0*((pos-joint.limit.lower)/(joint.limit.upper-joint.limit.lower)) - 1.0
+            self.torque_norm[i] = torque/joint.limit.effort
+
+            
+        
