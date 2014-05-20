@@ -7,7 +7,7 @@
         <type>oro_barrett_sim::BarrettSimManager</type>
         <name>barrett_manager</name>
       </component>
-      <opsScriptFile>$(arg ops_script)</opsScriptFile>
+      <orocosScript><filename>$(arg ops_script)</filename></orocosScript>
     </plugin>
   </gazebo>
 </robot>
