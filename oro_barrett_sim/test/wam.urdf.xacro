@@ -4,7 +4,7 @@
   <!-- Gazebo RTT Plugin -->
   <xacro:include filename="$(find oro_barrett_sim)/test/barrett_manager.urdf.xacro"/>
 
-  <!-- Includea all the WAM stuff -->
+  <!-- Include all the WAM stuff -->
   <xacro:include filename="$(find barrett_model)/models/wam_top.urdf.xacro"/>
 
   <!-- Root link is in the world frame-->
