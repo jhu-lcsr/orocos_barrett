@@ -172,7 +172,7 @@ namespace oro_barrett_sim {
           if(this->warning_count[i] % 1000 == 0) {
             // This warning can kill heartbeats
             RTT::log(RTT::Warning) << "Commanded torque (" << this->joint_effort(i)
-              << ") of joint (" << i << ") is within "<<(1.0-this->warning_fault_ratio)
+              << ") of joint (" << i << ") is within "<<(1.0-this->warning_fault_ratio) * 100.0
               <<"\% of safety limit: " << this->joint_effort_limits[i] << RTT::endlog();
           }
           this->warning_count[i]++;
