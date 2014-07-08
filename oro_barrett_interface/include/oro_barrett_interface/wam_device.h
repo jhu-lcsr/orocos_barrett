@@ -24,6 +24,13 @@
 
 #include <rtt_roscomm/rtt_rostopic.h>
 
+#include <oro_barrett_msgs/BarrettStatus.h>
+#include <oro_barrett_msgs/SetModeAction.h>
+#include <oro_barrett_msgs/SetHomeAction.h>
+
+#include <rtt_actionlib/rtt_actionlib.h>
+#include <rtt_actionlib/rtt_action_server.h>
+
 namespace oro_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.
@@ -100,7 +107,7 @@ namespace oro_barrett_interface {
       warning_count(DOF),
 
       // Modes
-      safety_mode(0),
+      safety_mode(-1),
       last_safety_mode(0)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
@@ -141,6 +148,7 @@ namespace oro_barrett_interface {
       // ROS data ports
       wam_service->addPort("joint_state_out", joint_state_out);
       wam_service->addPort("joint_resolver_state_out", joint_resolver_state_out);
+      wam_service->addPort("status_out", status_out);
 
       // Operations
       wam_service->addOperation("initialize", &WamDevice::initialize, this, RTT::OwnThread)
@@ -152,6 +160,7 @@ namespace oro_barrett_interface {
 
       std::string owner_name = parent_service->getOwner()->getName();
       joint_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/wam/joint_states"));
+      status_out.createStream(rtt_roscomm::topic("~"+owner_name+"/status"));
 
       // Resize joint names
       joint_names.resize(DOF);
@@ -221,6 +230,14 @@ namespace oro_barrett_interface {
 
       // Construct a KDL chain dynamics solver
       chain_dynamics.reset(new KDL::ChainDynParam(kdl_chain, KDL::Vector(0,0,0)));
+
+      // Set up action servers
+      set_mode_action_server_.addPorts(parent_service->provides("set_mode_action"), true, "~"+owner_name+"/wam/set_mode_action/");
+      set_mode_action_server_.registerGoalCallback(boost::bind(&WamDevice::set_mode_goal_cb, this, _1));
+      set_mode_action_server_.start();
+      set_home_action_server_.addPorts(parent_service->provides("set_home_action"), true, "~"+owner_name+"/wam/set_home_action/");
+      set_home_action_server_.registerGoalCallback(boost::bind(&WamDevice::set_home_goal_cb, this, _1));
+      set_home_action_server_.start();
     }
 
     //! Removes the added "wam" service 
@@ -328,6 +345,8 @@ namespace oro_barrett_interface {
     RTT::OutputPort<sensor_msgs::JointState >
       joint_resolver_state_out,
       joint_state_out;
+    RTT::OutputPort<oro_barrett_msgs::BarrettStatus >
+      status_out;
     //\}
 
     //! Configuration output ports
@@ -345,6 +364,40 @@ namespace oro_barrett_interface {
     std::vector<int> warning_count;
     unsigned int safety_mode;
     unsigned int last_safety_mode;
+    oro_barrett_msgs::BarrettStatus status_msg;
+
+    rtt_actionlib::RTTActionServer<oro_barrett_msgs::SetHomeAction> set_home_action_server_;
+    rtt_actionlib::RTTActionServer<oro_barrett_msgs::SetModeAction> set_mode_action_server_;
+
+    void set_home_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::SetHomeAction> gh) {
+      if(safety_mode == oro_barrett_msgs::SafetyMode::IDLE) {
+        this->initialize();
+        gh.setAccepted();
+        oro_barrett_msgs::SetHomeResult result;
+        gh.setSucceeded(result);
+      } else {
+        gh.setRejected();
+      }
+    }
+
+    void set_mode_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::SetModeAction> gh) {
+      if(safety_mode == oro_barrett_msgs::SafetyMode::IDLE) {
+        if(gh.getGoal()->mode.value == oro_barrett_msgs::RunMode::RUN) {
+          gh.setAccepted();
+          this->run();
+        } else if(gh.getGoal()->mode.value == oro_barrett_msgs::RunMode::IDLE) {
+          gh.setAccepted();
+          this->idle();
+        } else {
+          gh.setRejected();
+          return;
+        }
+        oro_barrett_msgs::SetModeResult result;
+        gh.setSucceeded(result);
+      } else {
+        gh.setRejected();
+      }
+    }
   };
 }
 

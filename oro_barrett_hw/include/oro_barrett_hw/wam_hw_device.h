@@ -18,6 +18,8 @@
 
 #include "butterworth.h"
 
+#include <oro_barrett_msgs/BarrettStatus.h>
+
 namespace oro_barrett_hw {
 
   /** \brief State structure for a real WAM device
@@ -28,6 +30,7 @@ namespace oro_barrett_hw {
   {
   public:
 
+    // TODO: Switch to oro_barrett_msgs
     enum RunMode {
       IDLE = 0,
       RUN
@@ -51,6 +54,10 @@ namespace oro_barrett_hw {
       velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0)),
       torque_scales_(Eigen::VectorXd::Constant(DOF, 1.0))
     {
+      this->status_msg.safety_mode = oro_barrett_msgs::SafetyMode::UNKNOWN;
+      this->status_msg.run_mode = oro_barrett_msgs::RunMode::IDLE;
+      this->status_msg.homed = false;
+
       parent_service->provides("wam")->addProperty("velocity_cutoff",velocity_cutoff_).doc("The velocity cutoff frequencies.");
       parent_service->provides("wam")->addProperty("torque_scales",torque_scales_).doc("The torque constant scaling factors.");
 
@@ -214,6 +221,10 @@ namespace oro_barrett_hw {
           // Publish
           this->joint_resolver_offset_out.write(this->joint_resolver_offset);
           this->joint_resolver_state_out.write(this->joint_resolver_state);
+
+          this->status_msg.safety_mode.value = this->safety_mode;
+          this->status_msg.run_mode.value = this->run_mode;
+          this->status_out.write(this->status_msg);
         }
       }
     }

@@ -5,5 +5,5 @@ find_package(catkin REQUIRED COMPONENTS rtt_ros)
 
 orocos_generate_package(
   INCLUDE_DIRS include
-  DEPENDS_TARGETS rtt_oro_barrett_msgs
+  DEPENDS_TARGETS rtt_oro_barrett_msgs rtt_actionlib
   )
