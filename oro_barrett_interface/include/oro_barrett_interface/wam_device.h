@@ -52,6 +52,11 @@ namespace oro_barrett_interface {
     virtual void readSim(ros::Time time, RTT::Seconds period) = 0;
     //! Write the simulation command
     virtual void writeSim(ros::Time time, RTT::Seconds period) = 0;
+    
+    //! Read the input ports TODO: make pure virtual
+    virtual void readPorts() {};
+    //! Write the output ports TODO: make pure virtual
+    virtual void writePorts() {};
 
     //! Write the calibration command when the wam is "near" the home position
     virtual void initialize() = 0;
