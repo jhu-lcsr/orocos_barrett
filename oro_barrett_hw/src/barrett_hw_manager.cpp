@@ -54,6 +54,7 @@ bool BarrettHWManager::startHook()
 {
   // Initialize the last update time
   last_update_time_ = rtt_rosclock::rtt_now();
+  return true;
 }
 
 bool BarrettHWManager::deviceStartHook()

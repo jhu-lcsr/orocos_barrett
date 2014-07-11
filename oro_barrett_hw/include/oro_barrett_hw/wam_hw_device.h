@@ -33,7 +33,7 @@ namespace oro_barrett_hw {
     // TODO: Switch to oro_barrett_msgs
     enum RunMode {
       IDLE = 0,
-      RUN
+      RUN = 1
     };
 
     /** \brief Construct a low-level WAM interface and extract joint information from
@@ -57,8 +57,8 @@ namespace oro_barrett_hw {
       velocity_buffer_(1),
       torque_buffer_(1)
     {
-      this->status_msg.safety_mode = oro_barrett_msgs::SafetyMode::UNKNOWN;
-      this->status_msg.run_mode = oro_barrett_msgs::RunMode::IDLE;
+      this->status_msg.safety_mode.value = oro_barrett_msgs::SafetyMode::UNKNOWN;
+      this->status_msg.run_mode.value = oro_barrett_msgs::RunMode::IDLE;
       this->status_msg.homed = false;
 
       parent_service->provides("wam")->addProperty("velocity_cutoff",velocity_cutoff_).doc("The velocity cutoff frequencies.");

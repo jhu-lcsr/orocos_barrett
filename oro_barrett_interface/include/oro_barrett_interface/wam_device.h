@@ -376,8 +376,9 @@ namespace oro_barrett_interface {
 
     void set_home_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::SetHomeAction> gh) {
       if(safety_mode == oro_barrett_msgs::SafetyMode::IDLE) {
-        this->initialize();
+        RTT::log(RTT::Info) << "Homing the WAM mode." << RTT::endlog();
         gh.setAccepted();
+        this->initialize();
         oro_barrett_msgs::SetHomeResult result;
         gh.setSucceeded(result);
       } else {
@@ -388,9 +389,11 @@ namespace oro_barrett_interface {
     void set_mode_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::SetModeAction> gh) {
       if(safety_mode == oro_barrett_msgs::SafetyMode::IDLE) {
         if(gh.getGoal()->mode.value == oro_barrett_msgs::RunMode::RUN) {
+          RTT::log(RTT::Info) << "Switching WAM to RUN mode." << RTT::endlog();
           gh.setAccepted();
           this->run();
         } else if(gh.getGoal()->mode.value == oro_barrett_msgs::RunMode::IDLE) {
+          RTT::log(RTT::Info) << "Switching WAM to IDLE mode." << RTT::endlog();
           gh.setAccepted();
           this->idle();
         } else {

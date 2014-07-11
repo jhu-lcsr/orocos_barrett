@@ -216,7 +216,7 @@ class BarrettDashboard(Plugin):
         self._update_buttons(self.run_mode)
 
     def _update_buttons(self, run_mode):
-        if run_mode != oro_barrett_msgs.msg.RunMode.IDLE:
+        if run_mode == oro_barrett_msgs.msg.RunMode.IDLE:
             self._widget.button_idle_wam.setChecked(True)
             self._widget.button_run_wam.setChecked(False)
         else:
@@ -257,15 +257,17 @@ class BarrettDashboard(Plugin):
             
     def _handle_set_home_clicked(self, checked):
         goal = oro_barrett_msgs.msg.SetHomeGoal()
-        self.set_home_action.send_goal(goal)
+        self.set_home_client.send_goal(goal)
 
     def _handle_idle_wam_clicked(self, checked):
-        goal = oro_barrett_msgs.msg.SetModeGoal()
-        goal.mode.value = oro_barrett_msgs.msg.RunMode.IDLE
-        self.set_mode_client.send_goal(goal)
+        if checked:
+            goal = oro_barrett_msgs.msg.SetModeGoal()
+            goal.mode.value = oro_barrett_msgs.msg.RunMode.IDLE
+            self.set_mode_client.send_goal(goal)
 
     def _handle_run_wam_clicked(self, checked):
-        goal = oro_barrett_msgs.msg.SetModeGoal()
-        goal.mode.value = oro_barrett_msgs.msg.RunMode.RUN
-        self.set_mode_client.send_goal(goal)
+        if checked:
+            goal = oro_barrett_msgs.msg.SetModeGoal()
+            goal.mode.value = oro_barrett_msgs.msg.RunMode.RUN
+            self.set_mode_client.send_goal(goal)
 
