@@ -116,6 +116,9 @@ namespace oro_barrett_hw {
 
       // Set the actual position
       interface->definePosition(actual_position);
+
+      // Set zeroed
+      interface->getSafetyModule()->setWamZeroed();
       
       // Disable resolver reading now that we've calibrated
       this->read_resolver = false;
@@ -138,8 +141,6 @@ namespace oro_barrett_hw {
       // Disable resolver reading 
       this->read_resolver = true;
       run_mode = IDLE;
-      // The following doesn't work as intended for some reason
-      //interface->getSafetyModule()->setMode(barrett::SafetyModule::IDLE);
     }
 
     virtual void readSim() { } 
