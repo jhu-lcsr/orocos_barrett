@@ -174,20 +174,29 @@ class BarrettDashboard(Plugin):
             self._widget.button_idle_wam.setEnabled(False)
             self._widget.button_run_wam.setEnabled(False)
             color = self.barrett_red
-        elif status == 1:
-            self._widget.safety_mode.setText('IDLE')
-            self._widget.safety_mode.setToolTip('The WAM is running but all joints are passive. It is safe to home the arm.')
-            self._widget.button_set_home.setEnabled(True)
-            self._widget.button_idle_wam.setEnabled(True)
-            self._widget.button_run_wam.setEnabled(True)
-            color = self.barrett_blue
-        elif status == 2:
-            self._widget.safety_mode.setText('ACTIVE')
-            self._widget.safety_mode.setToolTip('The WAM is running and all joints are active. Proceed with caution.')
-            self._widget.button_set_home.setEnabled(False)
-            self._widget.button_idle_wam.setEnabled(False)
-            self._widget.button_run_wam.setEnabled(False)
-            color = self.barrett_green
+        else:
+            if not self.homed:
+                self._widget.safety_mode.setText('UNCALIBRATED')
+                self._widget.safety_mode.setToolTip('The WAM is not calibrated. Please place it in the calibration posture and click the "Calibrate" button.')
+                self._widget.button_set_home.setEnabled(True)
+                self._widget.button_idle_wam.setEnabled(False)
+                self._widget.button_run_wam.setEnabled(False)
+                color = self.barrett_orange
+            else:
+                if status == 1:
+                    self._widget.safety_mode.setText('IDLE')
+                    self._widget.safety_mode.setToolTip('The WAM is running but all joints are passive. It is safe to home the arm.')
+                    self._widget.button_set_home.setEnabled(True)
+                    self._widget.button_idle_wam.setEnabled(True)
+                    self._widget.button_run_wam.setEnabled(True)
+                    color = self.barrett_blue
+                elif status == 2:
+                    self._widget.safety_mode.setText('ACTIVE')
+                    self._widget.safety_mode.setToolTip('The WAM is running and all joints are active. Proceed with caution.')
+                    self._widget.button_set_home.setEnabled(False)
+                    self._widget.button_idle_wam.setEnabled(False)
+                    self._widget.button_run_wam.setEnabled(False)
+                    color = self.barrett_green
 
         darker = color.darker()
         self._widget.safety_mode.setStyleSheet("QLabel { background-color : rgb(%d,%d,%d); color : rgb(%d,%d,%d); }" % (
@@ -254,6 +263,7 @@ class BarrettDashboard(Plugin):
     def _status_cb(self, msg):
         self.safety_mode = msg.safety_mode.value
         self.run_mode = msg.run_mode.value
+        self.homed = msg.homed
             
     def _handle_set_home_clicked(self, checked):
         goal = oro_barrett_msgs.msg.SetHomeGoal()
