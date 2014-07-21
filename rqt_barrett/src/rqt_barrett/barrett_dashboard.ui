@@ -103,7 +103,7 @@
               </size>
              </property>
              <property name="text">
-              <string>Idle</string>
+              <string>Control Off</string>
              </property>
              <property name="checkable">
               <bool>true</bool>
@@ -122,7 +122,7 @@
               </size>
              </property>
              <property name="text">
-              <string>Run</string>
+              <string>Control On</string>
              </property>
              <property name="checkable">
               <bool>true</bool>
