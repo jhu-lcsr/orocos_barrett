@@ -120,6 +120,7 @@ namespace oro_barrett_hw {
 
       // Set zeroed
       interface->getSafetyModule()->setWamZeroed();
+      this->homed = interface->getSafetyModule()->wamIsZeroed();
       
       // Disable resolver reading now that we've calibrated
       this->read_resolver = false;
@@ -228,6 +229,10 @@ namespace oro_barrett_hw {
 
           // Read resolver angles
           if(this->read_resolver) {
+            // Check if the wam is zeroed
+            this->homed = interface->getSafetyModule()->wamIsZeroed();
+
+            // Get the pucks in detail
             std::vector<barrett::Puck*> pucks = interface->getPucks();	
             for(size_t i=0; i<pucks.size(); i++) {
               this->joint_resolver_offset(i) = angles::normalize_angle(
