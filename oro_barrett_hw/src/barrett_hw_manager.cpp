@@ -209,9 +209,11 @@ void BarrettHWManager::stopHook()
 
 void BarrettHWManager::deviceStopHook()
 {
-
   // Set the mode to IDLE
-  this->setMode(barrett::SafetyModule::IDLE);
+  // FIXME: This doesn't work, it just leaves the thing running!!
+  // it's as if setting the mode to "IDLE" makes it so the safety module doesn't check heartbeats any more
+  // maybe instead we need to set all of the motor pucks to idle?
+  //this->setMode(barrett::SafetyModule::IDLE);
   // Wait for the system to become active
   if(!this->waitForMode(barrett::SafetyModule::IDLE)) {
     RTT::log(RTT::Warning) << "Could not IDLE the Barrett Hardware!" <<
