@@ -51,6 +51,7 @@ namespace oro_barrett_hw {
           urdf_prefix),
       barrett_manager_(barrett_manager),
       run_mode(IDLE),
+      homed(false),
       velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0)),
       torque_scales_(Eigen::VectorXd::Constant(DOF, 1.0)),
       position_buffer_(1),
@@ -219,6 +220,7 @@ namespace oro_barrett_hw {
           // Publish
           this->status_msg.safety_mode.value = this->safety_mode;
           this->status_msg.run_mode.value = this->run_mode;
+          this->status_msg.homed = this->homed;
           this->status_out.write(this->status_msg);
 
           this->joint_state_out.write(this->joint_state);
@@ -352,6 +354,7 @@ namespace oro_barrett_hw {
     std::vector<barrett::Puck*> wam_pucks;
     boost::shared_ptr<barrett::ProductManager> barrett_manager_;
     RunMode run_mode;
+    bool homed;
 
     std::vector<boost::shared_ptr<Butterworth<double> > > velocity_filters_;
     Eigen::VectorXd velocity_cutoff_;
