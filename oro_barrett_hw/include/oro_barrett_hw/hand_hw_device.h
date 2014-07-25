@@ -35,6 +35,9 @@ namespace oro_barrett_hw {
     virtual void readDevice(ros::Time time, RTT::Seconds period);
     virtual void writeDevice(ros::Time time, RTT::Seconds period);
 
+    virtual void readPorts();
+    virtual void writePorts();
+
     virtual void open();
     virtual void close();
 
@@ -177,12 +180,39 @@ namespace oro_barrett_hw {
     //! Measured execution times
     ros::Time last_read_time, last_write_time;
     
+    Eigen::Vector4d 
+      raw_inner_positions,
+      raw_outer_positions;
 
     const std::vector<barrett::Puck*>& pucks;
     HandInterface *interface;
 
     Eigen::VectorXd temperature;
     void checkTemperature();
+
+
+    Eigen::VectorXd
+      joint_position_tmp,
+      joint_velocity_tmp,
+      joint_torque_cmd_tmp,
+      joint_position_cmd_tmp,
+      joint_velocity_cmd_tmp,
+      joint_trapezoidal_cmd_tmp,
+      center_of_mass_tmp;
+    oro_barrett_msgs::BHandCmd
+      joint_cmd_tmp;
+
+    // Lock-free buffers for communicating with device thread
+    RTT::base::Buffer<Eigen::VectorXd> position_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> velocity_buffer_;
+
+    RTT::base::Buffer<Eigen::VectorXd> torque_cmd_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> position_cmd_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> velocity_cmd_buffer_;
+    RTT::base::Buffer<Eigen::VectorXd> trapezoidal_cmd_buffer_;
+
+    RTT::base::Buffer<oro_barrett_msgs::BHandCmd> joint_cmd_buffer_;
+
   };
 
   HandHWDevice::HandHWDevice(
@@ -199,7 +229,14 @@ namespace oro_barrett_hw {
     last_write_time(0.0),
     pucks(barrett_manager->getHandPucks()),
     interface(new HandHWDevice::HandInterface(pucks)),
-    temperature(N_PUCKS)
+    temperature(N_PUCKS),
+    position_buffer_(1),
+    velocity_buffer_(1),
+    torque_cmd_buffer_(1),
+    position_cmd_buffer_(1),
+    velocity_cmd_buffer_(1),
+    trapezoidal_cmd_buffer_(1),
+    joint_cmd_buffer_(1)
   { 
     parent_service->provides("hand")->addProperty("temperature",temperature);
   }
@@ -231,10 +268,6 @@ namespace oro_barrett_hw {
 
   void HandHWDevice::readDevice(ros::Time time, RTT::Seconds period)
   {
-    // Always compute and write center of mass
-    this->computeCenterOfMass(center_of_mass);
-    center_of_mass_out.write(center_of_mass);
-
     // Limit other oeprations
     if((time - last_read_time).toSec() < min_period) {
       return;
@@ -255,9 +288,19 @@ namespace oro_barrett_hw {
     }
 
     // Get the state, and re-shape it
-    Eigen::Vector4d raw_inner_positions = interface->getInnerLinkPosition();
-    Eigen::Vector4d raw_outer_positions = interface->getOuterLinkPosition();
+    raw_inner_positions = interface->getInnerLinkPosition();
+    raw_outer_positions = interface->getOuterLinkPosition();
 
+    last_read_time = time;
+  }
+
+  void HandHWDevice::writePorts()
+  {
+    // Always compute and write center of mass
+    this->computeCenterOfMass(center_of_mass);
+    center_of_mass_out.write(center_of_mass);
+
+    // Get the state, and re-shape it
     joint_position(0) = raw_inner_positions(3);
     joint_position(1) = raw_inner_positions(3);
     joint_position.block<3,1>(2,0) = raw_inner_positions.block<3,1>(0,0);
@@ -284,10 +327,7 @@ namespace oro_barrett_hw {
       com_msg.pose.position.y = center_of_mass[1];
       com_msg.pose.position.z = center_of_mass[2];
       this->center_of_mass_debug_out.write(com_msg);
-
     }
-
-    last_read_time = time;
   }
 
   void HandHWDevice::checkTemperature() 
@@ -300,6 +340,34 @@ namespace oro_barrett_hw {
       parent_service_->getOwner()->error();
     }
   }
+  
+  void HandHWDevice::readPorts()
+  {
+    // Read commands
+    bool new_torque_cmd = (joint_torque_in.readNewest(joint_torque_cmd_tmp) == RTT::NewData);
+    bool new_position_cmd = (joint_position_in.readNewest(joint_position_cmd_tmp) == RTT::NewData);
+    bool new_velocity_cmd = (joint_velocity_in.readNewest(joint_velocity_cmd_tmp) == RTT::NewData);
+    bool new_trapezoidal_cmd = (joint_trapezoidal_in.readNewest(joint_trapezoidal_cmd_tmp) == RTT::NewData);
+
+    bool new_joint_cmd = (joint_cmd_in.readNewest(joint_cmd_tmp) == RTT::NewData);
+
+    // Check sizes
+    if(joint_torque_cmd.size() != N_PUCKS ||
+       joint_position_cmd.size() != N_PUCKS ||
+       joint_velocity_cmd.size() != N_PUCKS ||
+       joint_trapezoidal_cmd.size() != N_PUCKS)
+    {
+      RTT::log(RTT::Error) << "Input command size msimatch!" << RTT::endlog();
+      return;
+    }
+
+    // Put the command into the lock-free buffers
+    if(new_torque_cmd) torque_cmd_buffer_.Push(joint_torque_cmd_tmp);
+    if(new_position_cmd) position_cmd_buffer_.Push(joint_position_cmd_tmp);
+    if(new_velocity_cmd) velocity_cmd_buffer_.Push(joint_velocity_cmd_tmp);
+    if(new_trapezoidal_cmd) trapezoidal_cmd_buffer_.Push(joint_trapezoidal_cmd_tmp);
+    if(new_joint_cmd) joint_cmd_buffer_.Push(joint_cmd_tmp);
+  }
 
   void HandHWDevice::writeDevice(ros::Time time, RTT::Seconds period)
   {
@@ -311,7 +379,8 @@ namespace oro_barrett_hw {
     // Check temperature
     checkTemperature();
 
-    switch(run_mode) {
+    switch(run_mode) 
+    {
       case IDLE:
         // Don't command the hand
         break;
@@ -351,26 +420,16 @@ namespace oro_barrett_hw {
         }
       case RUN:
         {
-          // Read commands
-          bool new_torque_cmd = (joint_torque_in.readNewest(joint_torque_cmd) == RTT::NewData);
-          bool new_position_cmd = (joint_position_in.readNewest(joint_position_cmd) == RTT::NewData);
-          bool new_velocity_cmd = (joint_velocity_in.readNewest(joint_velocity_cmd) == RTT::NewData);
-          bool new_trapezoidal_cmd = (joint_trapezoidal_in.readNewest(joint_trapezoidal_cmd) == RTT::NewData);
+          bool new_torque_cmd = torque_cmd_buffer_.Pop(joint_torque_cmd);
+          bool new_position_cmd = position_cmd_buffer_.Pop(joint_position_cmd);
+          bool new_velocity_cmd = velocity_cmd_buffer_.Pop(joint_velocity_cmd);
+          bool new_trapezoidal_cmd = trapezoidal_cmd_buffer_.Pop(joint_trapezoidal_cmd);
 
-          bool new_joint_cmd = (joint_cmd_in.readNewest(joint_cmd) == RTT::NewData);
-
-          // Check sizes
-          if(joint_torque_cmd.size() != N_PUCKS ||
-             joint_position_cmd.size() != N_PUCKS ||
-             joint_velocity_cmd.size() != N_PUCKS ||
-             joint_trapezoidal_cmd.size() != N_PUCKS)
-          {
-            RTT::log(RTT::Error) << "Input command size msimatch!" << RTT::endlog();
-            return;
-          }
+          bool new_joint_cmd = joint_cmd_buffer_.Pop(joint_cmd);
 
           // Parse the ROS command into command vectors and update modes if necessary
-          if(new_joint_cmd) {
+          if(new_joint_cmd) 
+          {
             joint_torque_cmd.setZero();
             joint_position_cmd.setZero();
             joint_velocity_cmd.setZero();
@@ -403,7 +462,8 @@ namespace oro_barrett_hw {
           }
 
           // Update the modes if they've changed
-          if(modes_changed) {
+          if(modes_changed) 
+          {
             RTT::log(RTT::Debug) << "Hand command modes changed." <<RTT::endlog();
             interface->setTorqueMode(mode_torque);
             interface->setPositionMode(mode_position);

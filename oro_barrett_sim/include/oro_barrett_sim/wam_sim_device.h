@@ -14,6 +14,8 @@
 
 #include <gazebo/physics/physics.hh>
 
+#include <oro_barrett_msgs/BarrettStatus.h>
+
 
 namespace oro_barrett_sim {
 
@@ -27,6 +29,7 @@ namespace oro_barrett_sim {
   {
   public:
 
+    // TODO: Switch to oro_barrett_msgs
     enum RunMode {
       IDLE = 0,
       RUN
@@ -49,6 +52,9 @@ namespace oro_barrett_sim {
       raw_joint_position(Eigen::Matrix<double,DOF,1>::Zero(DOF)),
       raw_joint_velocity(Eigen::Matrix<double,DOF,1>::Zero(DOF))
     {
+      this->status_msg.safety_mode.value = oro_barrett_msgs::SafetyMode::ACTIVE;
+      this->status_msg.run_mode.value = oro_barrett_msgs::RunMode::IDLE;
+      this->status_msg.homed = true;
     }
 
     virtual void initialize()
@@ -112,7 +118,6 @@ namespace oro_barrett_sim {
       this->joint_position_out.write(this->joint_position);
       this->joint_velocity_out.write(this->joint_velocity);
 
-
       // Publish state to ROS 
       if(this->joint_state_throttle.ready(0.02)) 
       {
@@ -125,6 +130,9 @@ namespace oro_barrett_sim {
           
         // Publish
         this->joint_state_out.write(this->joint_state);
+
+        this->status_msg.run_mode.value = this->run_mode;
+        this->status_out.write(this->status_msg);
       }
     }
 
