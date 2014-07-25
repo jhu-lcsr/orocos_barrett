@@ -46,8 +46,6 @@
 
   <export>
     <rtt_ros>
-      <plugin_depend>eigen_typekit</plugin_depend>
-      <plugin_depend>kdl_typekit</plugin_depend>
       <plugin_depend>rtt_rosparam</plugin_depend>
       <plugin_depend>rtt_roscomm</plugin_depend>
       <plugin_depend>rtt_sensor_msgs</plugin_depend>
