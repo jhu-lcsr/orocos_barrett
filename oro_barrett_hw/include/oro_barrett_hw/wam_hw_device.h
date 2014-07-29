@@ -52,8 +52,10 @@ namespace oro_barrett_hw {
       barrett_manager_(barrett_manager),
       run_mode(IDLE),
       homed(false),
+      define_position(false),
       velocity_cutoff_(Eigen::VectorXd::Constant(DOF, 10.0)),
       torque_scales_(Eigen::VectorXd::Constant(DOF, 1.0)),
+      actual_position_(Eigen::VectorXd::Constant(DOF, 0.0)),
       position_buffer_(1),
       velocity_buffer_(1),
       torque_buffer_(1)
@@ -111,17 +113,13 @@ namespace oro_barrett_hw {
       const Eigen::MatrixXd & mpos2jpos = interface->getMotorToJointPositionTransform();
 
       // Compute actual position
-      const Eigen::VectorXd actual_position =
+      this->actual_position_ =
         this->joint_home_position 
         + mpos2jpos*(this->joint_resolver_offset - this->joint_home_resolver_offset);
 
       // Set the actual position
-      interface->definePosition(actual_position);
+      this->define_position = true;
 
-      // Set zeroed
-      interface->getSafetyModule()->setWamZeroed();
-      this->homed = interface->getSafetyModule()->wamIsZeroed();
-      
       // Disable resolver reading now that we've calibrated
       this->read_resolver = false;
     }
@@ -189,14 +187,30 @@ namespace oro_barrett_hw {
 
     virtual void writeDevice(ros::Time time, RTT::Seconds period)
     {
-      // Read joint torques from buffer
-      // TODO: static allocation
-      Eigen::VectorXd torques;
-      if(torque_buffer_.Pop(torques)) {
-        // Set the torques
-        this->joint_effort_scaled = this->torque_scales_.array() * torques.array();
-        interface->setTorques(this->joint_effort_scaled);
-      }
+      switch(this->run_mode) {
+        case 0:
+          if(this->define_position) {
+            // Define the position
+            interface->definePosition(this->actual_position_);
+            
+            // Set zeroed
+            interface->getSafetyModule()->setWamZeroed(true);
+            this->homed = interface->getSafetyModule()->wamIsZeroed();
+      
+            this->define_position = false;
+          }
+          break;
+        case 1:
+          // Read joint torques from buffer
+          // TODO: static allocation
+          Eigen::VectorXd torques;
+          if(torque_buffer_.Pop(torques)) {
+            // Set the torques
+            this->joint_effort_scaled = this->torque_scales_.array() * torques.array();
+            interface->setTorques(this->joint_effort_scaled);
+          }
+          break;
+      };
     }
 
     //! Write to output ports
@@ -361,10 +375,13 @@ namespace oro_barrett_hw {
     boost::shared_ptr<barrett::ProductManager> barrett_manager_;
     RunMode run_mode;
     bool homed;
+    bool define_position;
 
     std::vector<boost::shared_ptr<Butterworth<double> > > velocity_filters_;
     Eigen::VectorXd velocity_cutoff_;
     Eigen::VectorXd torque_scales_;
+
+    Eigen::VectorXd actual_position_;
 
     RTT::base::Buffer<Eigen::VectorXd> position_buffer_;
     RTT::base::Buffer<Eigen::VectorXd> velocity_buffer_;

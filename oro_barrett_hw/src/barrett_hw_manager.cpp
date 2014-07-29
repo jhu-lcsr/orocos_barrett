@@ -70,8 +70,9 @@ bool BarrettHWManager::deviceStartHook()
     return false;
   }
 
-
   // Create a new manager
+  bool zeroed = false;
+
   try {
     if(!barrett_manager_) {
       barrett_manager_.reset(
@@ -90,6 +91,11 @@ bool BarrettHWManager::deviceStartHook()
         RTT::endlog();
       return false;
     }
+
+    // Configuring the wam causes it to believe that it's zeroed even if it isn't already
+    zeroed = barrett_manager_->getSafetyModule()->wamIsZeroed();
+
+    RTT::log(RTT::Warning) << "WAM " << (zeroed ? ("IS") : ("NOT") ) << " ZEROED" << RTT::endlog();
 
   } catch(std::runtime_error &err) {
     RTT::log(RTT::Error) << "Could not create barrett product manager: " << err.what() << RTT::endlog();
@@ -122,6 +128,9 @@ bool BarrettHWManager::deviceStartHook()
           <<wam_dof_<<"." <<RTT::endlog();
         return false;
     };
+
+    // Undo changes to the zeroed state caused by configuration
+    barrett_manager_->getSafetyModule()->setWamZeroed(zeroed);
 
     // Get WAM ros parameters
     rosparam->getComponentPrivate("wam");
@@ -368,7 +377,7 @@ BarrettHWManager::BarrettDeviceThread::BarrettDeviceThread(BarrettHWManager *own
   : RTT::os::Thread(
       ORO_SCHED_RT, 
       RTT::os::HighestPriority, 
-      0.001, // Run as fast as possible (1KHz)
+      0.0011, // Run as fast as possible (1KHz)
       1 << 4, // Use bus id for cpu affinity
       owner->getName()+"-device-thread"),
     owner_(owner),

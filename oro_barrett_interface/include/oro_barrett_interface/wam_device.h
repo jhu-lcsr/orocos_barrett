@@ -113,7 +113,11 @@ namespace oro_barrett_interface {
 
       // Modes
       safety_mode(-1),
-      last_safety_mode(0)
+      last_safety_mode(0),
+
+      // Action servers
+      set_home_action_server_("set_home_action", 1.0),
+      set_mode_action_server_("set_mode_action", 1.0)
     {
       RTT::Service::shared_ptr wam_service = parent_service->provides("wam");
       wam_service->doc("Barrett WAM robot interface");
