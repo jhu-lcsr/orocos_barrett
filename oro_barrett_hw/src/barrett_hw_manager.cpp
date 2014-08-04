@@ -377,7 +377,7 @@ BarrettHWManager::BarrettDeviceThread::BarrettDeviceThread(BarrettHWManager *own
   : RTT::os::Thread(
       ORO_SCHED_RT, 
       RTT::os::HighestPriority, 
-      0.0011, // Run as fast as possible (1KHz)
+      0.001, // Run as fast as possible (1KHz)
       1 << 4, // Use bus id for cpu affinity
       owner->getName()+"-device-thread"),
     owner_(owner),
