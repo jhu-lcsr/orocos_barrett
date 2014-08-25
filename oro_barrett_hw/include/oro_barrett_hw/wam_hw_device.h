@@ -349,8 +349,12 @@ namespace oro_barrett_hw {
             RTT::log(RTT::Error) << "Commanded torque (" << this->joint_effort(i)
               << ") of joint (" << i << ") has exceeded safety limit: "
               << this->joint_effort_limits[i] << RTT::endlog();
+
+            // Zero
             this->joint_effort.setZero();
-            if(interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ACTIVE) {
+            torque_buffer_.clear();
+            torque_buffer_.Push(this->joint_effort);
+            if(run_mode == RUN) {
               this->parent_service_->getOwner()->error();
               return;
             }
