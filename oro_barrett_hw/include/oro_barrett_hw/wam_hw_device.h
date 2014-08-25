@@ -33,7 +33,8 @@ namespace oro_barrett_hw {
     // TODO: Switch to oro_barrett_msgs
     enum RunMode {
       IDLE = 0,
-      RUN = 1
+      RUN = 1,
+      ESTOP = 2
     };
 
     /** \brief Construct a low-level WAM interface and extract joint information from
@@ -152,43 +153,46 @@ namespace oro_barrett_hw {
         return;
       }
 
-      // Poll the hardware
-      try {
-        interface->update();
-        // Get the safety module status
-        if (interface->getSafetyModule() != NULL) {
-          this->last_safety_mode = this->safety_mode;
-          this->safety_mode = interface->getSafetyModule()->getMode(true);
+      if(this->run_mode != ESTOP) {
+        // Poll the hardware
+        try {
+          interface->update();
+          // Get the safety module status
+          if (interface->getSafetyModule() != NULL) {
+            this->last_safety_mode = this->safety_mode;
+            this->safety_mode = interface->getSafetyModule()->getMode(true);
+          }
+        } catch (const std::runtime_error& e) {
+          if (interface->getSafetyModule() != NULL  &&
+              interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ESTOP) 
+          {
+            RTT::log(RTT::Error) << "E-stop! Cannot communicate with Pucks." << RTT::endlog();
+            return;
+          } else {
+            throw;
+          }
         }
-      } catch (const std::runtime_error& e) {
-        if (interface->getSafetyModule() != NULL  &&
-            interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ESTOP) 
-        {
-          RTT::log(RTT::Error) << "E-stop! Cannot communicate with Pucks." << RTT::endlog();
-          return;
-        } else {
-          throw;
+
+        // Get raw state
+        Eigen::Matrix<double,DOF,1> raw_joint_position = interface->getJointPositions();
+        Eigen::Matrix<double,DOF,1> raw_joint_velocity = interface->getJointVelocities();
+
+        // Butterworth the velocity
+        for(unsigned i=0; i<DOF; i++) {
+          raw_joint_velocity(i) = this->velocity_filters_[i]->eval(raw_joint_velocity(i));
         }
+
+        // Store position & velocity in buffer
+        position_buffer_.Push(raw_joint_position);
+        velocity_buffer_.Push(raw_joint_velocity);
       }
-
-      // Get raw state
-      Eigen::Matrix<double,DOF,1> raw_joint_position = interface->getJointPositions();
-      Eigen::Matrix<double,DOF,1> raw_joint_velocity = interface->getJointVelocities();
-
-      // Butterworth the velocity
-      for(unsigned i=0; i<DOF; i++) {
-        raw_joint_velocity(i) = this->velocity_filters_[i]->eval(raw_joint_velocity(i));
-      }
-
-      // Store position & velocity in buffer
-      position_buffer_.Push(raw_joint_position);
-      velocity_buffer_.Push(raw_joint_velocity);
     }
 
     virtual void writeDevice(ros::Time time, RTT::Seconds period)
     {
+      Eigen::VectorXd torques;
       switch(this->run_mode) {
-        case 0:
+        case IDLE:
           if(this->define_position) {
             // Define the position
             interface->definePosition(this->actual_position_);
@@ -200,15 +204,15 @@ namespace oro_barrett_hw {
             this->define_position = false;
           }
           break;
-        case 1:
+        case RUN:
           // Read joint torques from buffer
           // TODO: static allocation
-          Eigen::VectorXd torques;
           if(torque_buffer_.Pop(torques)) {
             // Set the torques
             this->joint_effort_scaled = this->torque_scales_.array() * torques.array();
             interface->setTorques(this->joint_effort_scaled);
           }
+        case ESTOP:
           break;
       };
     }
@@ -350,9 +354,9 @@ namespace oro_barrett_hw {
               << ") of joint (" << i << ") has exceeded safety limit: "
               << this->joint_effort_limits[i] << RTT::endlog();
             this->joint_effort.setZero();
+            this->run_mode = ESTOP;
             if(interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ACTIVE) {
               this->parent_service_->getOwner()->error();
-              return;
             }
           }
         }
