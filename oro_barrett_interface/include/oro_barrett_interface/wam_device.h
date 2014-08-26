@@ -64,6 +64,8 @@ namespace oro_barrett_interface {
     virtual void run() = 0;
     //! Switch disable commands to the wam
     virtual void idle() = 0;
+    //! Trigger an e-stop
+    virtual void estop() = 0;
     //! The safety mode (IDLE/ACTIVE/ESTOP)
     virtual unsigned int getSafetyMode() = 0;
   };
@@ -166,6 +168,8 @@ namespace oro_barrett_interface {
         .doc("Disable reading of additional data needed for calibration.");
       wam_service->addOperation("idle", &WamDevice::idle, this, RTT::OwnThread)
         .doc("Disable writing of commands and start reading additional data needed for calibration.");
+      wam_service->addOperation("estop", &WamDevice::estop, this, RTT::OwnThread)
+        .doc("Trigger an e-stop via software.");
 
       std::string owner_name = parent_service->getOwner()->getName();
       joint_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/wam/joint_states"));

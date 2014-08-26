@@ -32,7 +32,8 @@ namespace oro_barrett_sim {
     // TODO: Switch to oro_barrett_msgs
     enum RunMode {
       IDLE = 0,
-      RUN
+      RUN = 1,
+      ESTOP = 2
     };
 
     /** \brief Construct a low-level WAM interface and extract joint information from
@@ -74,6 +75,11 @@ namespace oro_barrett_sim {
     {
       RTT::log(RTT::Info) << "Idling simulated WAM." << RTT::endlog();
       run_mode = IDLE;
+    }
+
+    virtual void estop()
+    {
+      run_mode = ESTOP;
     }
 
     void readSim(ros::Time time, RTT::Seconds period)
