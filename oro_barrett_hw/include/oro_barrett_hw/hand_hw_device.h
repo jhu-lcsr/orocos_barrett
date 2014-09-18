@@ -184,6 +184,8 @@ namespace oro_barrett_hw {
       raw_inner_positions,
       raw_outer_positions;
 
+    std::vector<int> raw_fingertip_torques;
+
     const std::vector<barrett::Puck*>& pucks;
     HandInterface *interface;
 
@@ -290,6 +292,7 @@ namespace oro_barrett_hw {
     // Get the state, and re-shape it
     raw_inner_positions = interface->getInnerLinkPosition();
     raw_outer_positions = interface->getOuterLinkPosition();
+    raw_fingertip_torques = interface->getFingertipTorque();
 
     last_read_time = time;
   }
@@ -317,6 +320,10 @@ namespace oro_barrett_hw {
       Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),8) = this->joint_velocity;
       // TODO: Map knucle_torque into this
       //Eigen::Map<Eigen::VectorXd>(this->joint_state.effort.data(),8) = this->joint_torque;
+      this->joint_state.effort[5] = raw_fingertip_torques[0]/2000.0;
+      this->joint_state.effort[6] = raw_fingertip_torques[1]/2000.0;
+      this->joint_state.effort[7] = raw_fingertip_torques[2]/2000.0;
+
 
       // Publish
       this->joint_state_out.write(this->joint_state);
@@ -465,10 +472,10 @@ namespace oro_barrett_hw {
           if(modes_changed) 
           {
             RTT::log(RTT::Debug) << "Hand command modes changed." <<RTT::endlog();
-            interface->setTorqueMode(mode_torque);
-            interface->setPositionMode(mode_position);
-            interface->setVelocityMode(mode_velocity);
-            interface->setTrapezoidalMode(mode_trapezoidal);
+            interface->setTorqueMode      ( mode_torque & ~mode_position & ~mode_velocity & ~mode_trapezoidal);
+            interface->setPositionMode    (~mode_torque &  mode_position & ~mode_velocity & ~mode_trapezoidal);
+            interface->setVelocityMode    (~mode_torque & ~mode_position &  mode_velocity & ~mode_trapezoidal);
+            interface->setTrapezoidalMode (~mode_torque & ~mode_position & ~mode_velocity &  mode_trapezoidal);
             modes_changed = false;
           }
 
@@ -483,6 +490,9 @@ namespace oro_barrett_hw {
             interface->setPositionCommand(joint_position_cmd, mode_position); 
           }
           if(new_velocity_cmd) {
+            if(interface->doneMoving(mode_velocity, true)) {
+              interface->setVelocityMode(mode_velocity);
+            }
             interface->setVelocityCommand(joint_velocity_cmd, mode_velocity);
           }
           if(new_trapezoidal_cmd) {
