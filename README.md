@@ -24,6 +24,11 @@ about its contents.
 
 These packages require Orocos and rtt_ros_integration version 2.7 or greater.
 
+## ROS Interface
+
+These components also expose a ROS interface via the `rtt_ros_integration`
+packages.
+
 ## Theory of Operation
 
 Since this set of Orocos components uses `libbarrett`, it's designed with the
