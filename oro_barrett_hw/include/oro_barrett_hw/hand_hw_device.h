@@ -179,6 +179,7 @@ namespace oro_barrett_hw {
     RTT::Seconds min_period;
     //! Measured execution times
     ros::Time last_read_time, last_write_time;
+    ros::Time last_temp_read_time;
     
     Eigen::Vector4d 
       raw_inner_positions,
@@ -228,6 +229,7 @@ namespace oro_barrett_hw {
         urdf_prefix),
     min_period(RUN_UPDATE_PERIOD),
     last_read_time(0.0),
+    last_temp_read_time(0.0),
     last_write_time(0.0),
     pucks(barrett_manager->getHandPucks()),
     interface(new HandHWDevice::HandInterface(pucks)),
@@ -270,14 +272,18 @@ namespace oro_barrett_hw {
 
   void HandHWDevice::readDevice(ros::Time time, RTT::Seconds period)
   {
-    // Limit other oeprations
-    if((time - last_read_time).toSec() < min_period) {
+    // Limit other operations
+    if((time - last_read_time).toSec() < min_period) 
+    {
       return;
     }
-
-    // Check temperature
-    interface->getTemp(temperature);
-    checkTemperature();
+    else if((time - last_temp_read_time).toSec() > 20.0) 
+    {
+      // Check temperature every 20 seconds
+      interface->getTemp(temperature);
+      checkTemperature();
+      last_temp_check_time = time;
+    }
 
     // Poll the hardware
     try {
@@ -382,9 +388,6 @@ namespace oro_barrett_hw {
     if((time - last_write_time).toSec() < min_period) {
       return;
     }
-
-    // Check temperature
-    checkTemperature();
 
     switch(run_mode) 
     {
