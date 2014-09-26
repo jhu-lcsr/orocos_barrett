@@ -7,7 +7,7 @@ setActivity("barrett_manager",0.001,HighestPriority,ORO_SCHED_RT)
 loadService("barrett_manager","rosparam");
 
 barrett_manager.rosparam.getAll();
-barrett_manager.rosparam.getAbsolute("robot_description");
+barrett_manager.rosparam.getComponentPrivate("robot_description");
 
 barrett_manager.configure();
 barrett_manager.start();

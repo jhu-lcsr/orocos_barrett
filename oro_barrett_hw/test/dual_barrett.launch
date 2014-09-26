@@ -1,0 +1,35 @@
+<launch>
+
+  <arg name="LEFT_BUS" default="0"/>
+  <arg name="LEFT_4DOF" default="false"/>
+  <arg name="LEFT_7DOF" default="false"/>
+  <arg name="LEFT_HAND" default="false"/>
+
+  <arg name="RIGHT_BUS" default="1"/>
+  <arg name="RIGHT_4DOF" default="false"/>
+  <arg name="RIGHT_7DOF" default="false"/>
+  <arg name="RIGHT_HAND" default="false"/>
+
+  <include ns="barrett/barrett_manager_left" file="$(find oro_barrett_hw)/test/barrett_manager_config.launch">
+    <arg name="BUS" value="$(arg LEFT_BUS)"/>
+    <arg name="4DOF" value="$(arg LEFT_4DOF)"/>
+    <arg name="7DOF" value="$(arg LEFT_7DOF)"/>
+    <arg name="HAND" value="$(arg LEFT_HAND)"/>
+  </include>
+
+  <include ns="barrett/barrett_manager_right" file="$(find oro_barrett_hw)/test/barrett_manager_config.launch">
+    <arg name="BUS" value="$(arg RIGHT_BUS)"/>
+    <arg name="4DOF" value="$(arg RIGHT_4DOF)"/>
+    <arg name="7DOF" value="$(arg RIGHT_7DOF)"/>
+    <arg name="HAND" value="$(arg RIGHT_HAND)"/>
+  </include>
+
+  <include file="$(find rtt_ros)/launch/deployer.launch">
+    <arg name="NAME" value="barrett"/>
+    <arg name="DEPLOYER_ARGS" value="-s $(find oro_barrett_hw)/test/dual_barrett.ops"/>
+    <arg name="LOG_LEVEL" value="info"/>
+    <arg name="DEBUG" value="false"/>
+  </include>
+
+</launch>
+

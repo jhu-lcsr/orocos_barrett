@@ -148,7 +148,7 @@ namespace oro_barrett_hw {
       RTT::os::Semaphore done_sem_;
     };
 
-    BarrettDeviceThread device_thread_;
+    boost::shared_ptr<BarrettDeviceThread> device_thread_;
 
     // Threading synchronization
     RTT::os::Semaphore new_state_sem_;

@@ -13,7 +13,6 @@ BarrettHWManager::BarrettHWManager(const std::string &name) :
   oro_barrett_interface::BarrettManager(name),
   bus_id_(0),
   config_path_(""),
-  device_thread_(this),
   new_state_sem_(0),
   new_cmd_sem_(0)
 {
@@ -47,7 +46,8 @@ bool BarrettHWManager::configureHook()
     return false;
   }
 
-  return device_thread_.start();
+  device_thread_.reset(new BarrettDeviceThread(this));
+  return device_thread_->start();
 }
 
 bool BarrettHWManager::startHook()
@@ -213,7 +213,7 @@ void BarrettHWManager::updateHook()
 
 void BarrettHWManager::stopHook()
 {
-  device_thread_.stop();
+  device_thread_->stop();
 }
 
 void BarrettHWManager::deviceStopHook()
@@ -259,7 +259,9 @@ bool BarrettHWManager::configureWam4(const std::string &urdf_prefix)
 bool BarrettHWManager::configureWam4Protected(const std::string &urdf_prefix)
 {
   // Check for a 4-DOF WAM
-  if(!barrett_manager_->foundWam4()) {
+  if(barrett_manager_->foundWam4()) {
+    RTT::log(RTT::Info) << "Found 4-DOF WAM on bus " << bus_id_ << "." << RTT::endlog();
+  } else {
     RTT::log(RTT::Error) << "Could not find a requested 4-DOF WAM on bus" <<
       bus_id_ << "." << RTT::endlog();
     return false;
@@ -288,7 +290,9 @@ bool BarrettHWManager::configureWam7(const std::string &urdf_prefix)
 bool BarrettHWManager::configureWam7Protected(const std::string &urdf_prefix)
 {
   // Check for a 7-DOF WAM
-  if(!barrett_manager_->foundWam7()) {
+  if(barrett_manager_->foundWam7()) {
+    RTT::log(RTT::Info) << "Found 7-DOF WAM on bus" << bus_id_ << "." << RTT::endlog();
+  } else {
     RTT::log(RTT::Error) << "Could not find a requested 7-DOF WAM on bus" <<
       bus_id_ << "." << RTT::endlog();
     return false;
@@ -378,12 +382,13 @@ BarrettHWManager::BarrettDeviceThread::BarrettDeviceThread(BarrettHWManager *own
       ORO_SCHED_RT, 
       RTT::os::HighestPriority, 
       0.001, // Run as fast as possible (1KHz)
-      1 << 4, // Use bus id for cpu affinity
+      0x1 << owner->getBusID(), // Use bus id for cpu affinity
       owner->getName()+"-device-thread"),
     owner_(owner),
     break_loop_sem_(0),
     done_sem_(0)
 {
+  RTT::log(RTT::Info) << "Creating realtime barrett device thread on CPU " << owner->getBusID() << RTT::endlog();
 }
 
 bool BarrettHWManager::BarrettDeviceThread::initialize()
