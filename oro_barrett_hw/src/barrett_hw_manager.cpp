@@ -382,13 +382,13 @@ BarrettHWManager::BarrettDeviceThread::BarrettDeviceThread(BarrettHWManager *own
       ORO_SCHED_RT, 
       RTT::os::HighestPriority, 
       0.001, // Run as fast as possible (1KHz)
-      0x1 << owner->getBusID(), // Use bus id for cpu affinity
+      0x1 << (owner->getBusID()+1), // Use bus id for cpu affinity
       owner->getName()+"-device-thread"),
     owner_(owner),
     break_loop_sem_(0),
     done_sem_(0)
 {
-  RTT::log(RTT::Info) << "Creating realtime barrett device thread on CPU " << owner->getBusID() << RTT::endlog();
+  RTT::log(RTT::Info) << "Creating realtime barrett device thread on CPU " << (owner->getBusID()+1) << RTT::endlog();
 }
 
 bool BarrettHWManager::BarrettDeviceThread::initialize()

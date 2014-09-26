@@ -229,8 +229,8 @@ namespace oro_barrett_hw {
         urdf_prefix),
     min_period(RUN_UPDATE_PERIOD),
     last_read_time(0.0),
-    last_temp_read_time(0.0),
     last_write_time(0.0),
+    last_temp_read_time(0.0),
     pucks(barrett_manager->getHandPucks()),
     interface(new HandHWDevice::HandInterface(pucks)),
     temperature(N_PUCKS),
@@ -282,7 +282,7 @@ namespace oro_barrett_hw {
       // Check temperature every 20 seconds
       interface->getTemp(temperature);
       checkTemperature();
-      last_temp_check_time = time;
+      last_temp_read_time = time;
     }
 
     // Poll the hardware
