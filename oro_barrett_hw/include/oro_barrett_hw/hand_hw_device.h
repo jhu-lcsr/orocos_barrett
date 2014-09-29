@@ -493,9 +493,9 @@ namespace oro_barrett_hw {
             interface->setPositionCommand(joint_position_cmd, mode_position); 
           }
           if(new_velocity_cmd) {
-            if(interface->doneMoving(mode_velocity, true)) {
+            //if(interface->doneMoving(mode_velocity, true)) {
               interface->setVelocityMode(mode_velocity);
-            }
+            //}
             interface->setVelocityCommand(joint_velocity_cmd, mode_velocity);
           }
           if(new_trapezoidal_cmd) {
