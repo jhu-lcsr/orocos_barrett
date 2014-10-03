@@ -191,6 +191,13 @@ namespace oro_barrett_interface {
       const std::string tip_joint_name = (DOF == 7) ? (urdf_prefix+"/palm_yaw_joint") : (urdf_prefix+"/elbow_pitch_joint"); 
       boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint_name);
 
+      for(std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator it = urdf_model.joints_.begin();
+          it != urdf_model.joints_.end();
+          ++it)
+      {
+        RTT::log(RTT::Info) << "--- got joint: "<<it->first <<RTT::endlog();
+      }
+
       // Make sure we get the tip joint
       if(!joint) {
         throw std::runtime_error("Could not get tip joint for WAM!");
@@ -206,7 +213,12 @@ namespace oro_barrett_interface {
             || joint->type != urdf::Joint::REVOLUTE)
         {
           // Get the next joint
-          joint = urdf_model.getLink(joint->parent_link_name)->parent_joint;
+          boost::shared_ptr<const urdf::Link> link = urdf_model.getLink(joint->parent_link_name);
+          if(!link) {
+            RTT::log(RTT::Error) << "Could not get link: "<<joint->parent_link_name<<RTT::endlog();
+            throw std::runtime_error("Could not get link");
+          }
+          joint = link->parent_joint;
           // Make sure we didn't run out of links
           if(!joint) {
             std::ostringstream oss;
@@ -216,7 +228,7 @@ namespace oro_barrett_interface {
           }
         }
 
-        RTT::log(RTT::Debug) << "Got joint "<<jid<<": \"" << joint->name << "\"" << RTT::endlog();
+        RTT::log(RTT::Info) << "Got joint "<<jid<<": \"" << joint->name << "\"" << RTT::endlog();
 
         // Store the joint properties
         joint_names[jid] = joint->name;
