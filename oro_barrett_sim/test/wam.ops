@@ -1,6 +1,6 @@
 
 import("rtt_ros");
-import("rtt_rospack");
+ros.import("rtt_rospack");
 
 // Load berrett manager
 runScript(ros.find("oro_barrett_sim")+"/test/barrett_manager.ops");
