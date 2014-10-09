@@ -12,7 +12,6 @@ find_package(catkin REQUIRED
   )
 
 find_package(Eigen REQUIRED)
-find_package(OROCOS-RTT REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(Gazebo REQUIRED)
 
@@ -33,7 +32,6 @@ target_link_libraries(barrett_sim_manager
   ${GAZEBO_LIBRARIES}
   ${kdl_parser_LIBRARIES}
   ${urdf_LIBRARIES}
-  ${USE_OROCOS_LIBRARIES}
   ${orocos_kdl_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)

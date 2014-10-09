@@ -157,6 +157,7 @@ namespace oro_barrett_sim {
           }
       };
 
+
       if(i == 3) 
       {
         // Spread
@@ -173,6 +174,8 @@ namespace oro_barrett_sim {
         const double FINGER_GAIN = 10.0;
 
         // Get link and fingertip torque
+        // NOTE: Calling these is very sloe
+        // Potential solution: use feed-forward torques instead
         link_torque[i] = gazebo_joints[mid]->GetForceTorque(0).body2Torque.z;
         fingertip_torque[i] = gazebo_joints[did]->GetForceTorque(0).body2Torque.z;
 
@@ -342,9 +345,9 @@ namespace oro_barrett_sim {
     joint_cmd.mode[1] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
     joint_cmd.mode[2] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
 
-    joint_cmd.cmd[0] = 1.0;
-    joint_cmd.cmd[1] = 1.0;
-    joint_cmd.cmd[2] = 1.0;
+    joint_cmd.cmd[0] = -1.0;
+    joint_cmd.cmd[1] = -1.0;
+    joint_cmd.cmd[2] = -1.0;
   }
   void HandSimDevice::close() 
   {
@@ -353,9 +356,9 @@ namespace oro_barrett_sim {
     joint_cmd.mode[1] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
     joint_cmd.mode[2] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
 
-    joint_cmd.cmd[0] = -1.0;
-    joint_cmd.cmd[1] = -1.0;
-    joint_cmd.cmd[2] = -1.0;
+    joint_cmd.cmd[0] = 1.0;
+    joint_cmd.cmd[1] = 1.0;
+    joint_cmd.cmd[2] = 1.0;
   }
 }
 
