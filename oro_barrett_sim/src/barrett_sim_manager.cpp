@@ -24,6 +24,9 @@ BarrettSimManager::BarrettSimManager(const std::string &name) :
   this->addProperty("real_period",period_);
   this->addProperty("read_duration",read_duration_);
   this->addProperty("write_duration",write_duration_);
+  this->addProperty("gz_duration",gz_duration_);
+  this->addProperty("gz_wam_duration",gz_wam_duration_);
+  this->addProperty("gz_hand_duration",gz_hand_duration_);
 
   // Add required gazebo interfaces
   this->provides("gazebo")->addProperty("last_gz_update_time",last_gz_update_time_);
@@ -59,17 +62,26 @@ void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model)
     return;
   }
 
+  RTT::log(RTT::Debug) << ">>> BarrettSimManager::gazeboUpdateHook begin" << RTT::endlog();
+
+  ros::Time wall_time = rtt_rosclock::host_wall_now();
   if(wam_device_) {
     wam_device_->readSim(gz_time, gz_period);
     wam_device_->writeSim(gz_time, gz_period);
   }
+  gz_wam_duration_ = (rtt_rosclock::host_wall_now() - wall_time).toSec();
 
+  wall_time = rtt_rosclock::host_wall_now();
   if(hand_device_) {
     hand_device_->readSim(gz_time, gz_period);
     hand_device_->writeSim(gz_time, gz_period);
   }
+  gz_hand_duration_ = (rtt_rosclock::host_wall_now() - wall_time).toSec();
+
+  gz_duration_ = gz_wam_duration_ + gz_hand_duration_;
 
   last_gz_update_time_ = gz_time;
+  RTT::log(RTT::Debug) << "<<< BarrettSimManager::gazeboUpdateHook end" << RTT::endlog();
 }
 
 bool BarrettSimManager::configureHook()
@@ -168,6 +180,8 @@ void BarrettSimManager::updateHook()
   RTT::Seconds period = (time - last_update_time_).toSec();
   period_ = period;
 
+  RTT::log(RTT::Debug) << ">>> BarrettSimManager::updateHook begin" << RTT::endlog();
+
   // Read
   RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
   if(wam_device_) {
@@ -213,6 +227,7 @@ void BarrettSimManager::updateHook()
   write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
 
   last_update_time_ = time;
+  RTT::log(RTT::Debug) << "<<< BarrettSimManager::updateHook end" << RTT::endlog();
 }
 
 void BarrettSimManager::stopHook()

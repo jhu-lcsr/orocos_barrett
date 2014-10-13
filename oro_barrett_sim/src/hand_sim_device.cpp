@@ -352,9 +352,9 @@ namespace oro_barrett_sim {
     joint_cmd.mode[1] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
     joint_cmd.mode[2] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
 
-    joint_cmd.cmd[0] = 1.0;
-    joint_cmd.cmd[1] = 1.0;
-    joint_cmd.cmd[2] = 1.0;
+    joint_cmd.cmd[0] = -1.0;
+    joint_cmd.cmd[1] = -1.0;
+    joint_cmd.cmd[2] = -1.0;
   }
   void HandSimDevice::close()
   {
@@ -363,8 +363,8 @@ namespace oro_barrett_sim {
     joint_cmd.mode[1] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
     joint_cmd.mode[2] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
 
-    joint_cmd.cmd[0] = -1.0;
-    joint_cmd.cmd[1] = -1.0;
-    joint_cmd.cmd[2] = -1.0;
+    joint_cmd.cmd[0] = 1.0;
+    joint_cmd.cmd[1] = 1.0;
+    joint_cmd.cmd[2] = 1.0;
   }
 }

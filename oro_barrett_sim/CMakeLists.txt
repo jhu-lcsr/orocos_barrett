@@ -33,7 +33,6 @@ target_link_libraries(barrett_sim_manager
   ${GAZEBO_LIBRARIES}
   ${kdl_parser_LIBRARIES}
   ${urdf_LIBRARIES}
-  ${USE_OROCOS_LIBRARIES}
   ${orocos_kdl_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)

@@ -87,6 +87,9 @@ namespace oro_barrett_sim {
 
     ros::Time last_gz_update_time_;
     RTT::Seconds gz_period_;
+    RTT::Seconds gz_duration_;
+    RTT::Seconds gz_wam_duration_;
+    RTT::Seconds gz_hand_duration_;
 
     ros::Time last_update_time_;
     RTT::Seconds period_;
