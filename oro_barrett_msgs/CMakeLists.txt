@@ -6,14 +6,17 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_action_files(
   DIRECTORY action
-  FILES SetHome.action SetMode.action)
+  FILES SetHome.action SetMode.action BHandGrasp.action)
 
 add_message_files(
   FILES
   BHandCmd.msg
+  BHandCmdMode.msg
+  BHandStatus.msg
   SafetyMode.msg
   RunMode.msg
   BarrettStatus.msg)
+
 generate_messages(
   DEPENDENCIES
   std_msgs

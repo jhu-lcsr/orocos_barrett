@@ -12,7 +12,6 @@ find_package(catkin REQUIRED
   )
 
 find_package(Eigen REQUIRED)
-find_package(OROCOS-RTT REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(Gazebo REQUIRED)
 
@@ -27,7 +26,8 @@ add_definitions(
   ${Eigen_DEFINITIONS})
 
 orocos_component(barrett_sim_manager
-  src/barrett_sim_manager.cpp)
+  src/barrett_sim_manager.cpp
+  src/hand_sim_device.cpp)
 #message(STATUS "--- ${USE_OROCOS_LIBRARIES}")
 target_link_libraries(barrett_sim_manager
   ${GAZEBO_LIBRARIES}

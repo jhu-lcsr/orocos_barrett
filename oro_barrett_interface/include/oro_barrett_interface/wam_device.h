@@ -35,7 +35,7 @@ namespace oro_barrett_interface {
 
   /** \brief Base interface class for real and simulated 4- and 7-DOF WAMs.
    */
-  class WamDeviceBase 
+  class WamDeviceBase
   {
   public:
     //! Zero all the joint-space values
@@ -52,7 +52,7 @@ namespace oro_barrett_interface {
     virtual void readSim(ros::Time time, RTT::Seconds period) = 0;
     //! Write the simulation command
     virtual void writeSim(ros::Time time, RTT::Seconds period) = 0;
-    
+
     //! Read the input ports TODO: make pure virtual
     virtual void readPorts() {};
     //! Write the output ports TODO: make pure virtual
@@ -72,7 +72,7 @@ namespace oro_barrett_interface {
 
   //! Class for real and simulated 4- or 7-DOF WAMs
   template<size_t DOF>
-    class WamDevice : public WamDeviceBase 
+    class WamDevice : public WamDeviceBase
   {
   public:
     /** \brief Add all input and output ports to the "wam" service of the given parent
@@ -96,7 +96,7 @@ namespace oro_barrett_interface {
 
       kdl_chain(),
       chain_dynamics(),
-      
+
       joint_position(JointspaceVector::Zero(DOF)),
       joint_velocity(JointspaceVector::Zero(DOF)),
       joint_acceleration(JointspaceVector::Zero(DOF)),
@@ -188,7 +188,7 @@ namespace oro_barrett_interface {
       joint_resolver_state.position.resize(DOF);
 
       // Get URDF links starting at product tip link
-      const std::string tip_joint_name = (DOF == 7) ? (urdf_prefix+"/palm_yaw_joint") : (urdf_prefix+"/elbow_pitch_joint"); 
+      const std::string tip_joint_name = (DOF == 7) ? (urdf_prefix+"/palm_yaw_joint") : (urdf_prefix+"/elbow_pitch_joint");
       boost::shared_ptr<const urdf::Joint> joint = urdf_model.getJoint(tip_joint_name);
 
       for(std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator it = urdf_model.joints_.begin();
@@ -205,11 +205,11 @@ namespace oro_barrett_interface {
 
       // Get joint information starting at the tip (this way we're robust to
       // branching in the kinematic tree)
-      for(size_t i=0; i<DOF; i++) 
+      for(size_t i=0; i<DOF; i++)
       {
         unsigned jid = DOF-i-1;
         // While the joint has been handled or the joint type isn't revolute
-        while(std::find(joint_names.begin(), joint_names.end(), joint->name) != joint_names.end() 
+        while(std::find(joint_names.begin(), joint_names.end(), joint->name) != joint_names.end()
             || joint->type != urdf::Joint::REVOLUTE)
         {
           // Get the next joint
@@ -241,11 +241,11 @@ namespace oro_barrett_interface {
         std::ostringstream oss;
         RTT::log(RTT::Error) << "Failed to construct KDL tree!" << RTT::endlog();
         throw std::runtime_error(oss.str());
-      } 
+      }
 
       // Get a KDL chain for the arm
       if(!kdl_tree.getChain(
-          kdl_tree.getRootSegment()->first, 
+          kdl_tree.getRootSegment()->first,
           urdf_model.getJoint(tip_joint_name)->child_link_name,
           kdl_chain)) {
         std::ostringstream oss;
@@ -265,8 +265,8 @@ namespace oro_barrett_interface {
       set_home_action_server_.start();
     }
 
-    //! Removes the added "wam" service 
-    virtual ~WamDevice() 
+    //! Removes the added "wam" service
+    virtual ~WamDevice()
     {
       parent_service_->removeService("wam");
     }
@@ -275,7 +275,7 @@ namespace oro_barrett_interface {
 
     virtual void writeSim(ros::Time time, RTT::Seconds period) { }
 
-    virtual void setZero() 
+    virtual void setZero()
     {
       //joint_offsets.setZero();
       joint_position.setZero();
@@ -290,7 +290,7 @@ namespace oro_barrett_interface {
 
     virtual void readConfig()
     {
-      joint_resolver_ranges_out.write(joint_resolver_ranges); 
+      joint_resolver_ranges_out.write(joint_resolver_ranges);
       joint_effort_limits_out.write(joint_effort_limits);
       joint_velocity_limits_out.write(joint_velocity_limits);
       joint_names_out.write(joint_names);
@@ -298,7 +298,7 @@ namespace oro_barrett_interface {
 
     virtual unsigned int getSafetyMode()
     {
-      return safety_mode; 
+      return safety_mode;
     }
 
     //! Jointspace vector type for convenience
@@ -313,9 +313,9 @@ namespace oro_barrett_interface {
     double velocity_smoothing_factor;
     double warning_fault_ratio;
     bool read_resolver;
-    std::vector<std::string> 
+    std::vector<std::string>
       joint_names;
-    JointspaceVector 
+    JointspaceVector
       joint_home_position,
       joint_home_resolver_offset,
       joint_resolver_ranges,
@@ -331,7 +331,7 @@ namespace oro_barrett_interface {
     //! \name State
     //\{
     bool calibrated;
-    JointspaceVector 
+    JointspaceVector
       //joint_offsets,
       joint_position,
       joint_velocity,
@@ -352,14 +352,14 @@ namespace oro_barrett_interface {
       joint_effort_limits_violated;
 
     //\}
-    
+
     //! \name Input ports
     //\{
     RTT::InputPort<JointspaceVector >
       joint_effort_in,
       joint_calibration_burn_offsets_in;
     //\}
-    
+
     //! \name State output ports
     //\{
     RTT::OutputPort<JointspaceVector >
@@ -383,7 +383,7 @@ namespace oro_barrett_interface {
     RTT::OutputPort<std::vector<std::string> >
       joint_names_out;
     //\}
-    
+
     rtt_ros_tools::PeriodicThrottle joint_state_throttle;
 
     std::vector<int> warning_count;

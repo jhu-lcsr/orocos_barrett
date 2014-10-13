@@ -44,7 +44,7 @@ Both the hand and the arm must be initialized if they are being brought up for
 the first time (see below for more detail). Before they are initialized, they
 will still query the hardware for device state. Once they have been
 initialized, they can be `run`. Once the system is activated via the control
-pendant, they will send commands to their respective devices. 
+pendant, they will send commands to their respective devices.
 
 At any point, the WAM can be *soft-idled* which will cause it to stop sending
 effort commands. This is not the ideal way to start and stop the robot,
@@ -186,10 +186,14 @@ Before it can be used, the hand also needs to be homed:
 barrett_hw_manager.hand.initialize();
 ```
 
-This will open and close the hand, and afterwards the hand will output state and accept commands. 
+This will open and close the hand, and afterwards the hand will output state and accept commands.
 
 If the BHand has already been homed since it was turned on, you only need to run the following to start it reporting position and accepting commands:
 
 ```cpp
 barrett_hw_manager.hand.run();
 ```
+
+## BHand Joint Command Conventions
+
+Hand actuators: [f1, f2, f3, spread]

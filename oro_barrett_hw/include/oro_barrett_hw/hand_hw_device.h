@@ -12,10 +12,9 @@
 #include <oro_barrett_interface/hand_device.h>
 
 namespace oro_barrett_hw {
-  
+
   /** \brief Orocos/ROS interface for a Barrett Hand
    *
-   * This class 
    *
    */
   class HandHWDevice : public oro_barrett_interface::HandDevice
@@ -42,7 +41,7 @@ namespace oro_barrett_hw {
     virtual void close();
 
     HandHWDevice(
-        RTT::Service::shared_ptr parent_service, 
+        RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
         const std::string &urdf_prefix,
         boost::shared_ptr<barrett::ProductManager> barrett_manager);
@@ -59,9 +58,9 @@ namespace oro_barrett_hw {
 
     /** \brief Extension of libbarrett BHand interface to expose more capabilities
      *
-     * 
+     *
      */
-    class HandInterface : public barrett::Hand 
+    class HandInterface : public barrett::Hand
     {
     public:
 
@@ -75,12 +74,12 @@ namespace oro_barrett_hw {
       { }
 
       //! Query some hand properties
-      bool isInitialized() 
+      bool isInitialized()
       {
         using namespace barrett;
         int statuses[N_PUCKS];
         group.getProperty(Puck::TSTOP, statuses, true);
-        
+
         for(unsigned int i=0; i<N_PUCKS; i++) {
           RTT::log(RTT::Info) << "Puck " <<i<< " has status "<<statuses[i] << RTT::endlog();
         }
@@ -89,7 +88,7 @@ namespace oro_barrett_hw {
       }
 
       //! Get the torque at the distal knuckles
-      void getKnuckleTorque(Eigen::VectorXd torques) 
+      void getKnuckleTorque(Eigen::VectorXd torques)
       {
         int props[N_PUCKS];
         group.getProperty(barrett::Puck::SG, props, true);
@@ -99,7 +98,7 @@ namespace oro_barrett_hw {
       }
 
       //! Get the temperature of all the hand pucks
-      void getTemp(Eigen::VectorXd &temps) 
+      void getTemp(Eigen::VectorXd &temps)
       {
         int props[N_PUCKS];
         temps.resize(N_PUCKS);
@@ -111,7 +110,7 @@ namespace oro_barrett_hw {
       }
 
       //! Enable or disable finger compliance (this does not work)
-      void setCompliance(bool enable) 
+      void setCompliance(bool enable)
       {
         for(unsigned i=0; i<3; i++) {
           pucks[i]->setProperty(barrett::Puck::TSTOP, (enable) ? (50) : (0), false);
@@ -120,43 +119,43 @@ namespace oro_barrett_hw {
       }
 
       //! Set the command mode to torque for a subset of bitmasked hand pucks
-      void setTorqueMode(unsigned int digits) 
+      void setTorqueMode(unsigned int digits)
       {
         setProperty
-          (digits, 
-           barrett::Puck::MODE, 
+          (digits,
+           barrett::Puck::MODE,
            barrett::MotorPuck::MODE_TORQUE);
       }
 
       //! Set the command mode to PID for a subset of bitmasked hand pucks
-      void setPositionMode(unsigned int digits) 
+      void setPositionMode(unsigned int digits)
       {
         setProperty(
-            digits, 
-            barrett::Puck::MODE, 
+            digits,
+            barrett::Puck::MODE,
             barrett::MotorPuck::MODE_PID);
       }
 
       //! Set the command mode to velocity for a subset of bitmasked hand pucks
-      void setVelocityMode(unsigned int digits) 
+      void setVelocityMode(unsigned int digits)
       {
         setProperty(
             digits,
-            barrett::Puck::MODE, 
+            barrett::Puck::MODE,
             barrett::MotorPuck::MODE_VELOCITY);
       }
 
       //! Set the command mode to trapezoidal trajectory for a subset of bitmasked hand pucks
-      void setTrapezoidalMode(unsigned int digits) 
+      void setTrapezoidalMode(unsigned int digits)
       {
         setProperty(
-            digits, 
-            barrett::Puck::MODE, 
+            digits,
+            barrett::Puck::MODE,
             barrett::MotorPuck::MODE_TRAPEZOIDAL);
       }
 
       //! Set the velocity command for a subset of bitmasked hand pucks
-      void setVelocityCommand(const Eigen::VectorXd& jv, unsigned int digits) 
+      void setVelocityCommand(const Eigen::VectorXd& jv, unsigned int digits)
       {
         setProperty(
             digits,
@@ -165,23 +164,23 @@ namespace oro_barrett_hw {
       }
 
       //! Set the trapzeoidal command for a subset of bitmasked hand pucks
-      void setTrapezoidalCommand(const Eigen::VectorXd& jp, unsigned int digits) 
+      void setTrapezoidalCommand(const Eigen::VectorXd& jp, unsigned int digits)
       {
         setProperty(
-            digits, 
-            barrett::Puck::E, 
+            digits,
+            barrett::Puck::E,
             (j2pp.array() * jp.array()).matrix());
       }
     };
-     
+
   private:
     //! Minimum execution period. This runs at 10Hz before hand initialization and 30Hz afterwards.
     RTT::Seconds min_period;
     //! Measured execution times
     ros::Time last_read_time, last_write_time;
     ros::Time last_temp_read_time;
-    
-    Eigen::Vector4d 
+
+    Eigen::Vector4d
       raw_inner_positions,
       raw_outer_positions;
 
@@ -219,13 +218,13 @@ namespace oro_barrett_hw {
   };
 
   HandHWDevice::HandHWDevice(
-      RTT::Service::shared_ptr parent_service, 
+      RTT::Service::shared_ptr parent_service,
       const urdf::Model &urdf_model,
       const std::string &urdf_prefix,
       boost::shared_ptr<barrett::ProductManager> barrett_manager) :
     oro_barrett_interface::HandDevice(
-        parent_service, 
-        urdf_model, 
+        parent_service,
+        urdf_model,
         urdf_prefix),
     min_period(RUN_UPDATE_PERIOD),
     last_read_time(0.0),
@@ -241,7 +240,7 @@ namespace oro_barrett_hw {
     velocity_cmd_buffer_(1),
     trapezoidal_cmd_buffer_(1),
     joint_cmd_buffer_(1)
-  { 
+  {
     parent_service->provides("hand")->addProperty("temperature",temperature);
   }
 
@@ -273,11 +272,11 @@ namespace oro_barrett_hw {
   void HandHWDevice::readDevice(ros::Time time, RTT::Seconds period)
   {
     // Limit other operations
-    if((time - last_read_time).toSec() < min_period) 
+    if((time - last_read_time).toSec() < min_period)
     {
       return;
     }
-    else if((time - last_temp_read_time).toSec() > 20.0) 
+    else if((time - last_temp_read_time).toSec() > 20.0)
     {
       // Check temperature every 20 seconds
       interface->getTemp(temperature);
@@ -317,7 +316,7 @@ namespace oro_barrett_hw {
 
     joint_position_out.write(joint_position);
 
-    // Publish state to ROS 
+    // Publish state to ROS
     if(this->joint_state_throttle.ready(0.02)) {
       // Update the joint state message
       this->joint_state.header.stamp = rtt_rosclock::host_now();
@@ -330,7 +329,6 @@ namespace oro_barrett_hw {
       this->joint_state.effort[6] = raw_fingertip_torques[1]/2000.0;
       this->joint_state.effort[7] = raw_fingertip_torques[2]/2000.0;
 
-
       // Publish
       this->joint_state_out.write(this->joint_state);
 
@@ -340,10 +338,22 @@ namespace oro_barrett_hw {
       com_msg.pose.position.y = center_of_mass[1];
       com_msg.pose.position.z = center_of_mass[2];
       this->center_of_mass_debug_out.write(com_msg);
+
+      // Write out hand status
+      Eigen::Map<Eigen::VectorXd>(this->status_msg.temperature,4) = this->temperature;
+      for(unsigned i=0; i<Hand::DOF; i++) {
+        unsigned bit = 1<<i;
+        if(mode_torque & bit)       this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_TORQUE;
+        if(mode_position & bit)     this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_PID;
+        if(mode_trapezoidal & bit)  this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL;
+        if(mode_velocity & bit)     this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
+      }
+      this->status_out.write(this->status_msg);
+
     }
   }
 
-  void HandHWDevice::checkTemperature() 
+  void HandHWDevice::checkTemperature()
   {
     const double max_temp = MAX_PUCK_TEMP;
     if((temperature.array() > max_temp).any()) {
@@ -353,7 +363,7 @@ namespace oro_barrett_hw {
       parent_service_->getOwner()->error();
     }
   }
-  
+
   void HandHWDevice::readPorts()
   {
     // Read commands
@@ -389,7 +399,7 @@ namespace oro_barrett_hw {
       return;
     }
 
-    switch(run_mode) 
+    switch(run_mode)
     {
       case IDLE:
         // Don't command the hand
@@ -398,7 +408,7 @@ namespace oro_barrett_hw {
         {
           using namespace barrett;
 
-          switch(init_state) { 
+          switch(init_state) {
             case INIT_FINGERS:
               for (size_t i = 0; i < Hand::DOF-1; ++i) {
                 pucks[i]->setProperty(Puck::CMD, HandHWDevice::HandInterface::CMD_HI);
@@ -438,7 +448,7 @@ namespace oro_barrett_hw {
           bool new_joint_cmd = joint_cmd_buffer_.Pop(joint_cmd);
 
           // Parse the ROS command into command vectors and update modes if necessary
-          if(new_joint_cmd) 
+          if(new_joint_cmd)
           {
             joint_torque_cmd.setZero();
             joint_position_cmd.setZero();
@@ -472,7 +482,7 @@ namespace oro_barrett_hw {
           }
 
           // Update the modes if they've changed
-          if(modes_changed) 
+          if(modes_changed)
           {
             RTT::log(RTT::Debug) << "Hand command modes changed." <<RTT::endlog();
             interface->setTorqueMode      ( mode_torque & ~mode_position & ~mode_velocity & ~mode_trapezoidal);
@@ -487,10 +497,10 @@ namespace oro_barrett_hw {
             if(interface->doneMoving(mode_torque, true)) {
               interface->setTorqueMode(mode_torque);
             }
-            interface->setTorqueCommand(joint_torque_cmd, mode_torque); 
+            interface->setTorqueCommand(joint_torque_cmd, mode_torque);
           }
-          if(new_position_cmd) { 
-            interface->setPositionCommand(joint_position_cmd, mode_position); 
+          if(new_position_cmd) {
+            interface->setPositionCommand(joint_position_cmd, mode_position);
           }
           if(new_velocity_cmd) {
             //if(interface->doneMoving(mode_velocity, true)) {
@@ -502,7 +512,7 @@ namespace oro_barrett_hw {
             if(interface->doneMoving(mode_trapezoidal, true)) {
               interface->setTrapezoidalMode(mode_trapezoidal);
             }
-            interface->setTrapezoidalCommand(joint_trapezoidal_cmd, mode_trapezoidal); 
+            interface->setTrapezoidalCommand(joint_trapezoidal_cmd, mode_trapezoidal);
           }
         }
         break;
@@ -512,7 +522,7 @@ namespace oro_barrett_hw {
     last_write_time = time;
   }
 
-  void HandHWDevice::setTorqueMode(unsigned int joint_index) 
+  void HandHWDevice::setTorqueMode(unsigned int joint_index)
   {
     unsigned int joint_bit = (1<<joint_index);
 
@@ -530,14 +540,14 @@ namespace oro_barrett_hw {
     modes_changed = true;
   }
 
-  void HandHWDevice::setPositionMode(unsigned int joint_index) 
+  void HandHWDevice::setPositionMode(unsigned int joint_index)
   {
     unsigned int joint_bit = (1<<joint_index);
 
     if(mode_position & joint_bit) {
       return;
     }
-    
+
     RTT::log(RTT::Debug) << "Setting hand joint "<<joint_index<<" to PID mode." <<RTT::endlog();
 
     mode_torque &= ~joint_bit;
@@ -548,7 +558,7 @@ namespace oro_barrett_hw {
     modes_changed = true;
   }
 
-  void HandHWDevice::setVelocityMode(unsigned int joint_index) 
+  void HandHWDevice::setVelocityMode(unsigned int joint_index)
   {
     unsigned int joint_bit = (1<<joint_index);
 
@@ -566,7 +576,7 @@ namespace oro_barrett_hw {
     modes_changed = true;
   }
 
-  void HandHWDevice::setTrapezoidalMode(unsigned int joint_index) 
+  void HandHWDevice::setTrapezoidalMode(unsigned int joint_index)
   {
     unsigned int joint_bit = (1<<joint_index);
 
@@ -584,12 +594,12 @@ namespace oro_barrett_hw {
     modes_changed = true;
   }
 
-  void HandHWDevice::open() 
+  void HandHWDevice::open()
   {
     interface->open(barrett::Hand::GRASP, false);
   }
 
-  void HandHWDevice::close() 
+  void HandHWDevice::close()
   {
     interface->close(barrett::Hand::GRASP, false);
   }

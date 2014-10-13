@@ -1,0 +1,17 @@
+# Common spread positions
+#float64 SPREAD_POSITION_SAME=0.0
+#float64 SPREAD_POSITION_OPPOSE=3.14159
+#float64 SPREAD_POSITION_ORTHO=1.57079
+
+# Whether active compliance should be enabled
+bool active_compliance
+# The desired fingers for the grasp
+# True: move finger to position and aply given effort
+# False: leave finger at current position and don't apply effort
+bool[3] grasp_mask
+# The desired grasp speed (rad/s in the medial joint)
+float64[3] grasp_speed
+# The effort that should be applied once the fingers stop
+float64[3] grasp_effort
+---
+---

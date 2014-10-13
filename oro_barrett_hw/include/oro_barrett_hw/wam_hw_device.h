@@ -41,14 +41,14 @@ namespace oro_barrett_hw {
      * the URDF.
      */
     WamHWDevice(
-        RTT::Service::shared_ptr parent_service, 
+        RTT::Service::shared_ptr parent_service,
         const urdf::Model &urdf_model,
         const std::string &urdf_prefix,
         boost::shared_ptr<barrett::ProductManager> barrett_manager,
         const libconfig::Setting &wam_config) :
       oro_barrett_interface::WamDevice<DOF>(
-          parent_service, 
-          urdf_model, 
+          parent_service,
+          urdf_model,
           urdf_prefix),
       barrett_manager_(barrett_manager),
       run_mode(IDLE),
@@ -78,8 +78,8 @@ namespace oro_barrett_hw {
       // Construct a low-level wam
       interface.reset(
           new barrett::LowLevelWam<DOF>(
-            wam_pucks, 
-            barrett_manager->getSafetyModule(), 
+            wam_pucks,
+            barrett_manager->getSafetyModule(),
             wam_config["low_level"]));
 
       // Enable resolver reading
@@ -103,9 +103,9 @@ namespace oro_barrett_hw {
       }
     }
 
-    virtual void computeResolverRanges() 
+    virtual void computeResolverRanges()
     {
-      Eigen::MatrixXd m_to_j_pos = interface->getMotorToJointPositionTransform();  
+      Eigen::MatrixXd m_to_j_pos = interface->getMotorToJointPositionTransform();
       this->joint_resolver_ranges = (m_to_j_pos.diagonal().array() * 2.0*M_PI).cwiseAbs().matrix();
     }
 
@@ -115,7 +115,7 @@ namespace oro_barrett_hw {
 
       // Compute actual position
       this->actual_position_ =
-        this->joint_home_position 
+        this->joint_home_position
         + mpos2jpos*(this->joint_resolver_offset - this->joint_home_resolver_offset);
 
       // Set the actual position
@@ -127,7 +127,7 @@ namespace oro_barrett_hw {
 
     virtual void run()
     {
-      // Disable resolver reading 
+      // Disable resolver reading
       this->read_resolver = false;
       this->setFilters();
 
@@ -139,19 +139,19 @@ namespace oro_barrett_hw {
 
     virtual void idle()
     {
-      // Disable resolver reading 
+      // Disable resolver reading
       this->read_resolver = true;
       run_mode = IDLE;
     }
 
     virtual void estop()
     {
-      // Disable resolver reading 
+      // Disable resolver reading
       run_mode = ESTOP;
       this->parent_service_->getOwner()->error();
     }
 
-    virtual void readSim() { } 
+    virtual void readSim() { }
     virtual void writeSim() { }
 
     virtual void readDevice(ros::Time time, RTT::Seconds period)
@@ -171,7 +171,7 @@ namespace oro_barrett_hw {
           }
         } catch (const std::runtime_error& e) {
           if (interface->getSafetyModule() != NULL  &&
-              interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ESTOP) 
+              interface->getSafetyModule()->getMode(true) == barrett::SafetyModule::ESTOP)
           {
             RTT::log(RTT::Error) << "E-stop! Cannot communicate with Pucks." << RTT::endlog();
             return;
@@ -203,11 +203,11 @@ namespace oro_barrett_hw {
           if(this->define_position) {
             // Define the position
             interface->definePosition(this->actual_position_);
-            
+
             // Set zeroed
             interface->getSafetyModule()->setWamZeroed(true);
             this->homed = interface->getSafetyModule()->wamIsZeroed();
-      
+
             this->define_position = false;
           }
           break;
@@ -234,8 +234,8 @@ namespace oro_barrett_hw {
         this->joint_position_out.write(this->joint_position);
         this->joint_velocity_out.write(this->joint_velocity);
 
-        // Publish state to ROS 
-        if(this->joint_state_throttle.ready(0.01)) 
+        // Publish state to ROS
+        if(this->joint_state_throttle.ready(0.01))
         {
           // Update the joint state message
           this->joint_state.header.stamp = rtt_rosclock::host_now();
@@ -243,7 +243,7 @@ namespace oro_barrett_hw {
           Eigen::Map<Eigen::VectorXd>(this->joint_state.position.data(),DOF) = this->joint_position;
           Eigen::Map<Eigen::VectorXd>(this->joint_state.velocity.data(),DOF) = this->joint_velocity;
           Eigen::Map<Eigen::VectorXd>(this->joint_state.effort.data(),DOF) = this->joint_effort;
-            
+
           // Publish
           this->status_msg.safety_mode.value = this->safety_mode;
           this->status_msg.run_mode.value = this->run_mode;
@@ -258,12 +258,12 @@ namespace oro_barrett_hw {
             this->homed = interface->getSafetyModule()->wamIsZeroed();
 
             // Get the pucks in detail
-            std::vector<barrett::Puck*> pucks = interface->getPucks();	
+            std::vector<barrett::Puck*> pucks = interface->getPucks();
             for(size_t i=0; i<pucks.size(); i++) {
               this->joint_resolver_offset(i) = angles::normalize_angle(
                   interface->getMotorPucks()[i].counts2rad(pucks[i]->getProperty(barrett::Puck::MECH)));
             }
-            
+
             // Update the joint state message
             this->joint_resolver_state.header.stamp = rtt_rosclock::host_now();
             this->joint_resolver_state.name = this->joint_names;
@@ -281,9 +281,9 @@ namespace oro_barrett_hw {
     void readPorts()
     {
       // Check if the effort command port is connected
-      if(this->joint_effort_in.connected()) 
+      if(this->joint_effort_in.connected())
       {
-        // Read newest command from data ports 
+        // Read newest command from data ports
         Eigen::VectorXd joint_effort_tmp(DOF);
         bool new_effort_cmd = this->joint_effort_in.readNewest(joint_effort_tmp) == RTT::NewData;
 
@@ -297,14 +297,14 @@ namespace oro_barrett_hw {
           }
         }
       }
-      else 
+      else
       {
         // Not connected, zero the command
         this->joint_effort_raw.resize(DOF);
         this->joint_effort_raw.setZero();
       }
 
-      switch(run_mode) 
+      switch(run_mode)
       {
         case RUN:
           switch(this->safety_mode) {
@@ -342,10 +342,10 @@ namespace oro_barrett_hw {
       };
 
       // Check effort limits
-      for(size_t i=0; i<DOF; i++) 
+      for(size_t i=0; i<DOF; i++)
       {
         // Check if the joint effort is too high
-        if(std::abs(this->joint_effort(i)) > this->warning_fault_ratio*this->joint_effort_limits[i]) 
+        if(std::abs(this->joint_effort(i)) > this->warning_fault_ratio*this->joint_effort_limits[i])
         {
           if(this->warning_count[i] % 1000 == 0) {
             // This warning can kill heartbeats
@@ -372,7 +372,7 @@ namespace oro_barrett_hw {
         }
       }
 
-      // Push the torque command 
+      // Push the torque command
       torque_buffer_.clear();
       torque_buffer_.Push(this->joint_effort);
 
