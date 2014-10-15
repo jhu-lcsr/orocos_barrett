@@ -1,0 +1,11 @@
+
+Header header
+
+# The desired fingers for the grasp
+# True: move finger to position and aply given effort
+# False: leave finger at current position and don't apply effort
+bool[3] release_mask
+# The desired release speed (rad/s in the medial joint)
+float64[3] release_speed
+---
+---

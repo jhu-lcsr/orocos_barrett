@@ -3,7 +3,9 @@
 #float64 SPREAD_POSITION_OPPOSE=3.14159
 #float64 SPREAD_POSITION_ORTHO=1.57079
 
-# Whether active compliance should be enabled
+Header header
+
+# Whether active compliance should be enabled (IGNORED)
 bool active_compliance
 # The desired fingers for the grasp
 # True: move finger to position and aply given effort

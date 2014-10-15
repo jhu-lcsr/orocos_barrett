@@ -7,13 +7,13 @@ Header header
 float64[4] cmd
 
 # Joint command mode
-uint8[4] mode
+int8[4] mode
 
 # Motor command mode
-uint8 MODE_IDLE = 0
-uint8 MODE_TORQUE = 2
-uint8 MODE_PID = 3
-uint8 MODE_VELOCITY = 4
-uint8 MODE_TRAPEZOIDAL= 5
+int8 MODE_IDLE = 0
+int8 MODE_TORQUE = 2
+int8 MODE_PID = 3
+int8 MODE_VELOCITY = 4
+int8 MODE_TRAPEZOIDAL= 5
 # Do not change the mode
-uint8 MODE_SAME = 6
+int8 MODE_SAME = -1

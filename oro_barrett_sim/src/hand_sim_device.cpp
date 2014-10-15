@@ -1,5 +1,6 @@
 
 #include <oro_barrett_sim/hand_sim_device.h>
+#include <oro_barrett_msgs/BHandCmd.h>
 
 #include <rtt_rosclock/rtt_rosclock.h>
 
@@ -50,7 +51,7 @@ namespace oro_barrett_sim {
     joint_torque_max(8,1.5),
     joint_torque_breakaway(4),
     p_gain(5.0),
-    d_gain(0.0),
+    d_gain(1.0),
     velocity_gain(0.1),
     trap_start_times(4),
     torque_switches(4,false)
@@ -67,6 +68,9 @@ namespace oro_barrett_sim {
 
     parent_service->addProperty("stop_torque",stop_torque);
     parent_service->addProperty("breakaway_torque",breakaway_torque);
+
+    parent_service->addProperty("p_gain",p_gain);
+    parent_service->addProperty("d_gain",d_gain);
   }
 
   void HandSimDevice::initialize()
@@ -100,7 +104,7 @@ namespace oro_barrett_sim {
     // Get state from ALL gazebo joints
     for(unsigned j=0; j < DOF; j++) {
       joint_position[j] = gazebo_joints[j]->GetAngle(0).Radian();
-      joint_velocity[j] = 0.5*joint_velocity[j] + 0.5*gazebo_joints[j]->GetVelocity(0);
+      joint_velocity[j] = 0.9*joint_velocity[j] + 0.1*gazebo_joints[j]->GetVelocity(0);
       joint_torque[j] = gazebo_joints[j]->GetForce(0u);
     }
   }
@@ -140,7 +144,7 @@ namespace oro_barrett_sim {
           }
         case oro_barrett_msgs::BHandCmd::MODE_PID:
           {
-            joint_torque = p_gain * (cmd - pos);
+            joint_torque = p_gain * (cmd - pos) - d_gain * vel;
             break;
           }
         case oro_barrett_msgs::BHandCmd::MODE_VELOCITY:
@@ -180,13 +184,13 @@ namespace oro_barrett_sim {
         fingertip_torque[i] = gazebo_joints[did]->GetForceTorque(0).body2Torque.z;
 
         //  Check for torque switch condition
-        if(joint_velocity[mid] < 0.2) {
+        //if(joint_velocity[mid] < 0.2) {
           if(link_torque[i] > breakaway_torque) {
             torque_switches[i] = true;
           } else if(link_torque[i] < -breakaway_torque/2.0) {
             torque_switches[i] = false;
           }
-        }
+        //}
 
         if(joint_torque > 0) {
           if(!torque_switches[i]) {
@@ -241,6 +245,7 @@ namespace oro_barrett_sim {
       this->center_of_mass_debug_out.write(com_msg);
 
       // Write out hand status
+      this->status_msg.header.stamp = this->joint_state.header.stamp;
       this->status_msg.temperature.assign(25.0);
       for(unsigned i=0; i<4; i++) {
         this->status_msg.mode[i] = this->joint_cmd.mode[i];
@@ -287,7 +292,8 @@ namespace oro_barrett_sim {
           bool new_velocity_cmd = (joint_velocity_in.readNewest(joint_velocity_cmd) == RTT::NewData);
           bool new_trapezoidal_cmd = (joint_trapezoidal_in.readNewest(joint_trapezoidal_cmd) == RTT::NewData);
 
-          bool new_joint_cmd = (joint_cmd_in.readNewest(joint_cmd) == RTT::NewData);
+          oro_barrett_msgs::BHandCmd joint_cmd_tmp;
+          bool new_joint_cmd = (joint_cmd_in.readNewest(joint_cmd_tmp) == RTT::NewData);
 
           // Check sizes
           if(joint_torque_cmd.size() != N_PUCKS ||
@@ -299,8 +305,38 @@ namespace oro_barrett_sim {
             return;
           }
 
-          // Parse the vectors into a ros command message
-          for(int i=0; i < N_PUCKS; i++) {
+          for(int i=0; i<N_PUCKS; i++) {
+            // Update command vectors with input from ROS message
+            if(new_joint_cmd) 
+            {
+              switch(joint_cmd_tmp.mode[i]) {
+                case oro_barrett_msgs::BHandCmd::MODE_SAME:
+                  continue;
+                case oro_barrett_msgs::BHandCmd::MODE_TORQUE:
+                  joint_torque_cmd[i] = joint_cmd_tmp.cmd[i];
+                  new_torque_cmd = true;
+                  break;
+                case oro_barrett_msgs::BHandCmd::MODE_PID:
+                  joint_position_cmd[i] = joint_cmd_tmp.cmd[i];
+                  new_position_cmd = true;
+                  break;
+                case oro_barrett_msgs::BHandCmd::MODE_VELOCITY:
+                  joint_velocity_cmd[i] = joint_cmd_tmp.cmd[i];
+                  new_velocity_cmd = true;
+                  break;
+                case oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL:
+                  joint_trapezoidal_cmd[i] = joint_cmd_tmp.cmd[i];
+                  new_trapezoidal_cmd = true;
+                  break;
+                default:
+                  RTT::log(RTT::Error) << "Bad BHand command mode: "<< joint_cmd_tmp.mode[i] << RTT::endlog();
+                  return;
+              };
+              // Set the new command mode
+              joint_cmd.mode[i] = joint_cmd_tmp.mode[i];
+            }
+
+            // Update the command
             if(new_torque_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_TORQUE) {
               joint_cmd.cmd[i] = joint_torque_cmd[i];
             } else if(new_position_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_PID) {
@@ -309,6 +345,7 @@ namespace oro_barrett_sim {
               joint_cmd.cmd[i] = joint_velocity_cmd[i];
             } else if(new_trapezoidal_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL) {
               joint_cmd.cmd[i] = joint_trapezoidal_cmd[i];
+              // Generate trapezoidal profile generators
               trap_generators[i].SetProfile(joint_position[i], joint_cmd.cmd[i]);
               trap_start_times[i] = rtt_rosclock::rtt_now();
             }
