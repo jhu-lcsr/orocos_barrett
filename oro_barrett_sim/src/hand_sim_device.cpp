@@ -183,7 +183,9 @@ namespace oro_barrett_sim {
         link_torque[i] = gazebo_joints[mid]->GetForceTorque(0).body2Torque.z;
         fingertip_torque[i] = gazebo_joints[did]->GetForceTorque(0).body2Torque.z;
 
-        //  Check for torque switch condition
+        // Check for torque switch condition
+        // NOTE: The below velocity threshold is too simple and does not capture the
+        // real behavior.
         //if(joint_velocity[mid] < 0.2) {
           if(link_torque[i] > breakaway_torque) {
             torque_switches[i] = true;
