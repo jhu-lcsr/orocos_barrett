@@ -1,4 +1,3 @@
-
 Header header
 
 # The desired fingers for the grasp
@@ -7,5 +6,14 @@ Header header
 bool[3] release_mask
 # The desired release speed (rad/s in the medial joint)
 float64[3] release_speed
+
+# Release stop conditions (from below)
+int8[3] stop
+# Stop the given fingers when they form a convex opening
+int8 STOP_AT_POSITION=0
+int8 STOP_WHEN_CONVEX=1
+
+# Release stop parameters (for some stop modes)
+float64[3] stop_param
 ---
 ---

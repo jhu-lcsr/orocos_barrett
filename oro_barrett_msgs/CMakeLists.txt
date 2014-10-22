@@ -10,7 +10,8 @@ add_action_files(
   SetHome.action
   SetMode.action
   BHandGrasp.action
-  BHandRelease.action)
+  BHandRelease.action
+  BHandSpread.action)
 
 add_message_files(
   FILES

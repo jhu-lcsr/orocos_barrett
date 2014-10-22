@@ -50,7 +50,7 @@ namespace oro_barrett_sim {
     joint_torque(8),
     joint_torque_max(8,1.5),
     joint_torque_breakaway(4),
-    p_gain(5.0),
+    p_gain(25.0),
     d_gain(1.0),
     velocity_gain(0.1),
     trap_start_times(4),
@@ -124,7 +124,7 @@ namespace oro_barrett_sim {
 
       double cmd = joint_cmd.cmd[i];
       double pos = joint_position[mid];
-      double vel = joint_velocity[mid];
+      double vel = (joint_velocity[mid]*140.0 + joint_velocity[did]*45.0) / (45.0 + 140.0);
 
       // Switch the control law based on the command mode
       switch(joint_cmd.mode[i])
@@ -189,7 +189,7 @@ namespace oro_barrett_sim {
         //if(joint_velocity[mid] < 0.2) {
           if(link_torque[i] > breakaway_torque) {
             torque_switches[i] = true;
-          } else if(link_torque[i] < -breakaway_torque/2.0) {
+          } else if(joint_torque < -breakaway_torque/4.0) {
             torque_switches[i] = false;
           }
         //}
@@ -348,7 +348,9 @@ namespace oro_barrett_sim {
             } else if(new_trapezoidal_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL) {
               joint_cmd.cmd[i] = joint_trapezoidal_cmd[i];
               // Generate trapezoidal profile generators
-              trap_generators[i].SetProfile(joint_position[i], joint_cmd.cmd[i]);
+              unsigned medial_id = 0, distal_id = 0;
+              fingerToJointIDs(i, medial_id, distal_id);
+              trap_generators[i].SetProfile(joint_position[medial_id], joint_cmd.cmd[i]);
               trap_start_times[i] = rtt_rosclock::rtt_now();
             }
           }

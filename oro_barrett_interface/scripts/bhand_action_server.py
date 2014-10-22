@@ -4,6 +4,7 @@ import rospy
 
 from oro_barrett_interface.grasp_action import GraspAction
 from oro_barrett_interface.release_action import ReleaseAction
+from oro_barrett_interface.spread_action import SpreadAction
 
 
 class BHandActionServer(object):
@@ -11,13 +12,10 @@ class BHandActionServer(object):
     def __init__(self, name="bhand_action_server"):
         self.actions = {}
 
-        # Add grasp action
-        grasp = GraspAction(name='grasp', parent=self)
-        self.actions[grasp.name] = grasp
-
-        # Add release action
-        release = ReleaseAction(name='release', parent=self)
-        self.actions[release.name] = release
+        # add mutually-exclusive actions
+        self.actions['greasp'] = GraspAction(name='grasp', parent=self)
+        self.actions['release'] = ReleaseAction(name='release', parent=self)
+        self.actions['spread'] = SpreadAction(name='spread', parent=self)
 
     def preempt_peers_of(self, name):
         """Preempt all peers of the given action. This enables coupling of

@@ -1,0 +1,10 @@
+Header header
+
+# The spread position in radians (see below for common positions)
+float64 spread_position
+# Common spread positions
+float64 SPREAD_SAME=0.0
+float64 SPREAD_OPPOSE=3.14159
+float64 SPREAD_ORTHO=1.57079
+---
+---

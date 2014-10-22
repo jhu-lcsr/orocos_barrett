@@ -10,8 +10,8 @@ from oro_barrett_msgs.msg import BHandReleaseAction, BHandStatus, BHandCmd, BHan
 
 class ReleaseAction(object):
     """
-    The Release Action aims to position the given fingers so that they form a
-    convex opening.
+    The Release Action aims to position the given fingers so that they form an
+    opening.
     """
 
     # Activity states
@@ -30,7 +30,7 @@ class ReleaseAction(object):
 
         # State
         self.state = None
-        self.convex = None
+        self.done = None
         self.position = None
         self.active_goal = None
 
@@ -71,16 +71,20 @@ class ReleaseAction(object):
         for f_id in range(3):
             self.position[f_id] = msg.position[f_id+2]
 
-        # Check if each finger is convex
-        def is_convex(j1, j2):
-            c = j1 < pi / 2.0 and (j2 + j1) < pi / 4.0
-            #if not c:
-            #print('not convex: %g,  %g' % (j1, j2))
-            return c
+        if self.active_goal:
 
-        self.convex[0] = is_convex(msg.position[2], msg.position[5])
-        self.convex[1] = is_convex(msg.position[3], msg.position[6])
-        self.convex[2] = is_convex(msg.position[4], msg.position[7])
+            def is_convex(j1, j2):
+                c = j1 < pi / 2.0 and (j2 + j1) < pi / 4.0
+                #if not c:
+                #print('not convex: %g,  %g' % (j1, j2))
+                return c
+
+            # Check if each finger is done
+            for i, inner, outer in zip([0,1,2], [2,3,4] ,[5,6,7]):
+                if self.active_goal.stop_when_convex[i]:
+                    self.done[i] = is_convex(msg.position[inner], msg.position[outer])
+                else:
+                    self.done[i] = msg.position[inner] < 0.01 and msg.position[outer] < 0.01
 
     def status_cb(self, msg):
         """Interpret BHand status, send appropriate commands and update activity state"""
@@ -102,11 +106,11 @@ class ReleaseAction(object):
                 rospy.loginfo("Releasing...")
 
         elif self.state == self.RELEASING:
-            # Disable fingers which are convex
+            # Disable fingers which are done
             if not all([m == BHandCmdMode.MODE_PID for m in masked_modes]):
-                for f_id, convex in enumerate(self.convex):
-                    # Stop the finger if it's convex
-                    if convex:
+                for f_id, done in enumerate(self.done):
+                    # Stop the finger if it's done
+                    if done:
                         self.release_cmd.mode[f_id] = BHandCmdMode.MODE_PID
                         self.release_cmd.cmd[f_id] = self.position[f_id]
                 self.cmd_pub.publish(self.release_cmd)
@@ -141,7 +145,7 @@ class ReleaseAction(object):
 
         # Clear the release state
         self.state = self.PRERELEASE
-        self.convex = [False] * 3
+        self.done = [False] * 3
         self.position = [0.0] * 3
 
         # Construct hand commands for releasing and holding
