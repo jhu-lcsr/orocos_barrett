@@ -1,6 +1,7 @@
 
 from collections import deque
 
+from math import pi, sin, cos, sqrt
 import numpy
 
 import rospy
@@ -9,6 +10,21 @@ import actionlib
 from sensor_msgs.msg import JointState
 from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd, BHandCmdMode
 
+def area(a1, a2):
+    l1 = 0.07 # inner finger
+    l2 = 0.05 # outer finger
+    lp = 0.10 # palm width
+    # full outer link angle (including offset)
+    a2 = a2 + pi/4.0
+    # finger triangle
+    area1 = 0.5 * l1*l2*sin(pi-a2)
+    # palm triangle
+    l3 = sqrt(l1*l1 + l2*l2 - 2*l1*l2*cos(pi-a2))
+    area2 = 0.5 * lp * l3 * (sin(a1)*sqrt(1-pow(l2/l3*sin(a2),2.0)) + l2/l3*sin(a2)*cos(a1))
+    # outer triangle
+    area3 = 0.5 * (sin(a1) + sin(a1+a2)) * (lp+cos(a1)+cos(a1+a2))
+    rospy.loginfo("---------\nA1: %g\nA2: %g\nA3: %g" % (area1, area2, area3))
+    return area1 + area2 + area3
 
 class GraspAction(object):
     """
@@ -43,6 +59,9 @@ class GraspAction(object):
         self.stamp_history = None
         self.velocity_history = None
         self.position_history = None
+
+        self.inner_outer_indices = zip([0,1,2], [2,3,4], [5,6,7])
+        self.areas = [0,0,0]
 
         # ROS parameters
         self.feedback_period = rospy.Duration(rospy.get_param('~feedback_period', 0.1))
@@ -79,6 +98,11 @@ class GraspAction(object):
     def joint_states_cb(self, msg):
         """Determine when joints are done moving"""
 
+        # Compute finger areas
+        for i, inner, outer in self.inner_outer_indices:
+            self.areas[i] = area(msg.position[inner], msg.position[outer])
+            rospy.loginfo("Area %d: %g" % (i, self.areas[i]))
+
         # Return if not active
         if self.server and not self.server.is_active():
             return
@@ -98,13 +122,13 @@ class GraspAction(object):
             a = self.vel_filter_cutoff
             new_vel_filtered = a * dof_hist[-1] + (1.0 - a) * new_vel if len(dof_hist) > 0 else new_vel
             dof_hist.append(new_vel_filtered)
-            print("Joint %d vel: %g" % (dof, new_vel))
+            #print("Joint %d vel: %g" % (dof, new_vel))
 
         for dof, (dof_hist, new_pos) in enumerate(zip(self.position_history, msg.position)):
             a = self.pos_filter_cutoff
             new_pos_filtered = a * dof_hist[-1] + (1.0 - a) * new_pos if len(dof_hist) > 0 else new_pos
             dof_hist.append(new_pos_filtered)
-            print("Joint %d pos: %g" % (dof, new_pos))
+            #print("Joint %d pos: %g" % (dof, new_pos))
 
         # Pop off old data
         while len(self.stamp_history) > 0 and (now - self.stamp_history[0]) > self.max_static_duration:
@@ -155,7 +179,7 @@ class GraspAction(object):
             rospy.loginfo("Sending grasp command...")
             self.cmd_pub.publish(self.grasp_cmd)
             # Check if all joints are in velocity mode
-            if all([m == BHandCmdMode.MODE_VELOCITY for m in masked_modes]):
+            if all([m == BHandCmdMode.MODE_TRAPEZOIDAL for m in masked_modes]):
                 self.state = self.GRASPING
                 self.grasp_start_time = rospy.Time.now()
                 rospy.loginfo("Grasping...")
@@ -213,7 +237,7 @@ class GraspAction(object):
         for f_id, use_finger in enumerate(self.active_goal.grasp_mask):
             rospy.loginfo("Grasp %s finger %d" % ('using' if use_finger else 'not using', 1+f_id))
             # Grasp command
-            self.grasp_cmd.mode[f_id] = BHandCmd.MODE_VELOCITY if use_finger else BHandCmd.MODE_SAME
+            self.grasp_cmd.mode[f_id] = BHandCmd.MODE_TRAPEZOIDAL if use_finger else BHandCmd.MODE_SAME
             self.grasp_cmd.cmd[f_id] = self.active_goal.grasp_speed[f_id] if use_finger else 0.0
 
             # Hold command
