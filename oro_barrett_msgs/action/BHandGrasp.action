@@ -8,9 +8,12 @@ bool active_compliance
 bool[3] grasp_mask
 # The desired grasp speed (rad/s in the medial joint)
 float64[3] grasp_speed
-# If the inner links close past this position, the grasp will be treated as a failure
-flaot64[3] grasp_position
+# The desired grasp position when the fingers should switch to force mode
+float64[3] grasp_position
 # The effort that should be applied once the fingers stop
 float64[3] grasp_effort
+# If the inner links close smaller than this cross-sectional area, the grasp
+# will be treated as a failure
+float64[3] min_grasp_area
 ---
 ---
