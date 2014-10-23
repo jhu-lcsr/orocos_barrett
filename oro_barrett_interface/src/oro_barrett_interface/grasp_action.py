@@ -1,7 +1,7 @@
 
 from collections import deque
 
-from math import pi, sin, cos, sqrt
+from math import pi, sin, cos, tan, sqrt
 import numpy
 
 import rospy
@@ -10,21 +10,34 @@ import actionlib
 from sensor_msgs.msg import JointState
 from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd, BHandCmdMode
 
-def area(a1, a2):
-    l1 = 0.07 # inner finger
-    l2 = 0.05 # outer finger
-    lp = 0.10 # palm width
-    # full outer link angle (including offset)
-    a2 = a2 + pi/4.0
-    # finger triangle
-    area1 = 0.5 * l1*l2*sin(pi-a2)
-    # palm triangle
-    l3 = sqrt(l1*l1 + l2*l2 - 2*l1*l2*cos(pi-a2))
-    area2 = 0.5 * lp * l3 * (sin(a1)*sqrt(1-pow(l2/l3*sin(a2),2.0)) + l2/l3*sin(a2)*cos(a1))
-    # outer triangle
-    area3 = 0.5 * (sin(a1) + sin(a1+a2)) * (lp+cos(a1)+cos(a1+a2))
-    rospy.loginfo("---------\nA1: %g\nA2: %g\nA3: %g" % (area1, area2, area3))
-    return area1 + area2 + area3
+# Inscribed circle computation (from mathematica)
+def circ_x(th1,th2,t1,t2,t3):
+    return ((0.07 * (t3 - t1 * sqrt(1. + pow(tan(th1),2))) * (sin(th1) - cos(th1) * tan(th1+th2))) /
+            ((-t3 + t1 * sqrt(1. + pow(tan(th1),2))) * tan(th1+th2)+tan(th1) * (t3 - t2 * sqrt(1. + pow(tan(th1+th2),2)))))
+def circ_y(th1,th2,t1,t2,t3):
+    return ((t3 * sin(th1) * (0.07 * tan(th1) - 0.07 * tan(th1+th2))) /
+            ((-t3 + t1 * sqrt(1.+pow(tan(th1),2))) * tan(th1 + th2)+ tan(th1) * (t3 - t2 * sqrt(1.+pow(tan(th1+th2),2)))))
+def circ_r(th1,th2,t1,t2,t3):
+    return ((sin(th1) * (0.07 * tan(th1)-0.07 * tan(th1+th2))) /
+            ((-t3 + t1 * sqrt(1. +pow(tan(th1),2))) * tan(th1+th2)+tan(th1) * (t3-t2 * sqrt(1. +pow(tan(th1+th2),2)))))
+
+def radius(q1, q2):
+
+    th1 = q1
+    th2 = pi/4+q2
+
+    t1 = 1
+    t2 = 1
+    t3 = 1
+
+    if th1+th2 > pi/2:
+        t2 = -1
+    if th1 > pi/2:
+        t1 = -1
+
+    r = circ_r(th1,th2,t1,t2,t3)
+
+    return r
 
 class GraspAction(object):
     """
@@ -61,7 +74,7 @@ class GraspAction(object):
         self.position_history = None
 
         self.inner_outer_indices = zip([0,1,2], [2,3,4], [5,6,7])
-        self.areas = [0,0,0]
+        self.radii = [0,0,0]
 
         # ROS parameters
         self.feedback_period = rospy.Duration(rospy.get_param('~feedback_period', 0.1))
@@ -98,14 +111,14 @@ class GraspAction(object):
     def joint_states_cb(self, msg):
         """Determine when joints are done moving"""
 
-        # Compute finger areas
-        for i, inner, outer in self.inner_outer_indices:
-            self.areas[i] = area(msg.position[inner], msg.position[outer])
-            rospy.loginfo("Area %d: %g" % (i, self.areas[i]))
-
         # Return if not active
         if self.server and not self.server.is_active():
             return
+
+        # Compute finger inscribed circle radii
+        for i, inner, outer in self.inner_outer_indices:
+            self.radii[i] = radius(msg.position[inner], msg.position[outer])
+        rospy.logdebug("Finger radii %s" % str(self.radii[i]))
 
         # Add the latest joint state
         now = rospy.Time.now()
