@@ -19,11 +19,13 @@ def main():
     goal.grasp_mask = [True, True, True]
     goal.grasp_speed = [2.0, 2.0, 2.0]
     goal.grasp_effort = [1.0, 1.0, 1.0]
+    goal.min_fingertip_radius = 0.05
 
     grasp_client.send_goal(goal)
-    grasp_client.wait_for_result()
+    res = grasp_client.wait_for_result()
 
-    print(grasp_client.get_result())
+    print('goal: %s' % str(grasp_client.get_state()))
+    print(res)
 
     return 0
 

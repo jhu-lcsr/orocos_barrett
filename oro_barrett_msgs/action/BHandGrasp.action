@@ -12,13 +12,18 @@ float64[3] grasp_speed
 float64[3] grasp_position
 # The effort that should be applied once the fingers stop
 float64[3] grasp_effort
+
 # The action will fail if when the force is applied, all of the fingers enclose
-# an area smaller than the minimum grasp radius. This is the radius of the
-# circle which is tangent to the links of a given finger and the palm.
-float64[3] min_grasp_radii
-# The action will fail if when the force is applied, the separation of the
-# fingertips is smaller than the minimum separation distance
-float64 min_fingertip_separation
+# an area smaller than the minimum cage radius. This is the radius of the
+# circle which is tangent to the links of a given finger and the palm. Diabled
+# if set to 0.
+float64[3] min_cage_radii
+
+# The action will fail if when the force is applied, the radius of the circle
+# tagent to all three fingertips is smaller than the minimum separation
+# distance. Disabled if set to 0.
+float64 min_fingertip_radius
 ---
-float64[3] grasp_radii
+float64[3] cage_radii
+float64 fingertip_radius
 ---
