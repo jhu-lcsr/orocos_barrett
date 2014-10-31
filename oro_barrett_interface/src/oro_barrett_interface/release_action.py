@@ -7,6 +7,8 @@ import actionlib
 from sensor_msgs.msg import JointState
 from oro_barrett_msgs.msg import BHandReleaseAction, BHandReleaseGoal, BHandStatus, BHandCmd, BHandCmdMode
 
+from .hand_metrics import compute_fingertip_radius
+from .hand_metrics import compute_finger_cage_radius
 
 class ReleaseAction(object):
     """
@@ -81,10 +83,10 @@ class ReleaseAction(object):
 
             # Check if each finger is done
             for i, inner, outer in zip([0,1,2], [2,3,4] ,[5,6,7]):
-                if self.active_goal.stop[i] == BHandReleaseGoal.STOP_WHEN_CONVEX:
+                if self.active_goal.stop_mode[i] == BHandReleaseGoal.STOP_WHEN_CONVEX:
                     self.done[i] = is_convex(msg.position[inner], msg.position[outer])
-                else:
-                    self.done[i] = msg.position[inner] < 0.01 and msg.position[outer] < 0.01
+                elif self.active_goal.stop_mode[i] == BHandReleaseGoal.STOP_AT_POSITION:
+                    self.done[i] = msg.position[inner] + msg.position[outer] > self.active_goal.stop_angle
 
     def status_cb(self, msg):
         """Interpret BHand status, send appropriate commands and update activity state"""

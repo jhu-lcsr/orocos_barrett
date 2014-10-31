@@ -17,7 +17,7 @@ def main():
 
     goal = BHandGraspGoal()
     goal.grasp_mask = [True, True, True]
-    goal.grasp_speed = [2.0, 2.0, 2.0]
+    goal.grasp_speed = [1.0, 1.0, 1.0]
     goal.grasp_effort = [1.0, 1.0, 1.0]
     goal.min_fingertip_radius = 0.05
 

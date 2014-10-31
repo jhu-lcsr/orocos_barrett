@@ -17,21 +17,8 @@ except ImportError as err:
 from sensor_msgs.msg import JointState
 from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd, BHandCmdMode
 
-F1 = 0
-F2 = 1
-F3 = 2
-FINGERS = zip([F1, F2, F3], [1,2,3])
-
-def hat(v):
-    """Skew-symmetric operator"""
-    return np.array([
-        [   0.0, -v[2],  v[1]],
-        [  v[2],   0.0, -v[0]],
-        [ -v[1],  v[0],   0.0]])
-
-def proj(q, n):
-    """Projects vector q onto plane n"""
-    return q - np.dot(q, n) * n
+from .hand_metrics import compute_fingertip_radius
+from .hand_metrics import compute_finger_cage_radius
 
 class GraspAction(object):
     """
@@ -51,144 +38,6 @@ class GraspAction(object):
     ABORTING = 3
     PREEMPTING = 4
     DONE = 5
-
-    def compute_finger_cage_radius(self, q1, q2):
-        """Compute the circle inscribed between the fingers and the palm.
-
-        q1: Inner joint angle
-        q2: Outer joint angle
-
-        returns: Circle parameters: (x, y, r)
-        """
-
-        # Get the two absolute finger angles
-        th1 = q1
-        th2 = pi/4+q2
-
-        # Solution selection parameters
-        t1 = 1
-        t2 = 1
-        t3 = 1
-
-        # Select different solutions based on angles so that we select the
-        # solution which is caged by the finger
-        if th1+th2 > pi/2:
-            t2 = -1
-        if th1 > pi/2:
-            t1 = -1
-
-        try:
-            # X position of the circle center
-            x = ((0.07 * (t3 - t1 * sqrt(1. + pow(tan(th1),2))) * (sin(th1) - cos(th1) * tan(th1+th2))) /
-                 ((-t3 + t1 * sqrt(1. + pow(tan(th1),2))) * tan(th1+th2)+tan(th1) * (t3 - t2 * sqrt(1. + pow(tan(th1+th2),2)))))
-
-            # Y position of the circle center
-            y = ((t3 * sin(th1) * (0.07 * tan(th1) - 0.07 * tan(th1+th2))) /
-                 ((-t3 + t1 * sqrt(1.+pow(tan(th1),2))) * tan(th1 + th2)+ tan(th1) * (t3 - t2 * sqrt(1.+pow(tan(th1+th2),2)))))
-
-            # Circle radius
-            r = ((sin(th1) * (0.07 * tan(th1)-0.07 * tan(th1+th2))) /
-                 ((-t3 + t1 * sqrt(1. +pow(tan(th1),2))) * tan(th1+th2)+tan(th1) * (t3-t2 * sqrt(1. +pow(tan(th1+th2),2)))))
-        except ZeroDivisionError as err:
-            rospy.logwarn("Could not compute cage radius: zero division error")
-            return (0,0,0)
-
-        return (x, y, r)
-
-    def compute_fingertip_radius(self):
-        """Compute the radius of the circle defined by the three fingertips"""
-
-        # Max fingertip radius defined based on BHand kinematics
-        MAX_FINGERTIP_RADIUS = 0.15536
-
-        # construct frame names
-        prox_links = [''] * 3
-        med_links = [''] * 3
-        tip_links = [''] * 3
-        palm_link = '/'.join([self.tf_prefix,'bhand_palm_link'])
-
-        tip = [[]]*3
-        med = [[]]*3
-        prox = [[]]*3
-        bases = [[]]*3
-
-        try:
-            for f,fl in FINGERS:
-                if f != F3:
-                    prox_links[f] = '/'.join([self.tf_prefix,'finger_%d' % fl,'prox_link'])
-                else:
-                    prox_links[f] = palm_link
-                med_links[f] = '/'.join([self.tf_prefix,'finger_%d' % fl,'med_link'])
-                tip_links[f] = '/'.join([self.tf_prefix,'finger_%d' % fl,'tip_link'])
-
-                # get fingertip position
-                prox[f] = np.array(self.listener.lookupTransform(palm_link,  prox_links[f], rospy.Time(0))[0])
-                med[f] = np.array(self.listener.lookupTransform(palm_link,  med_links[f], rospy.Time(0))[0])
-                tip[f] = np.array(self.listener.lookupTransform(palm_link, tip_links[f], rospy.Time(0))[0])
-
-                bases[f] = prox[f]-med[f]
-                bases[f][2] = 0
-                bases[f] = bases[f]/norm(bases[f])
-
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as exc:
-            rospy.logwarn("Could not lookup finger frames!")
-            return MAX_FINGERTIP_RADIUS
-
-        # compute fingertip plane normal
-        n = np.inner(hat(tip[F2] - tip[F1]), tip[F3] - tip[F2])
-        n = n/norm(n)
-
-        # project the direction of the fingertips onto the fingertip plane
-        bases_proj = [None]*3
-        for f,fl in FINGERS:
-            g = proj(bases[f], n)
-            g = g/norm(g)
-            bases_proj[f] = g
-
-        # compute projected points (for 3d offset)
-        A = (Ax, Ay, Az) = proj(tip[F1],n)
-        B = (Bx, By, Bz) = proj(tip[F2],n)
-        C = (Cx, Cy, Cz) = proj(tip[F3],n)
-        #print('A: %s, B: %s, C: %s' % (str(A), str(B), str(C)))
-
-        # plane origin
-        fingertip_plane_origin = np.inner(n, (tip[F1] - A)) * n
-
-        a = norm(tip[F2] - tip[F1])
-        b = norm(tip[F3] - tip[F2])
-        c = norm(tip[F1] - tip[F3])
-
-        # check if the fingers are no longer pointing inside the circle
-        if n[2] > 0:
-            # Catch zero-division error (colinear fingertips)
-            try:
-                radius = a * b * c / sqrt((a+b+c)*(-a+b+c)*(a-b+c)*(a+b-c))
-
-                D = 2 * (Ax * (By - Cy) + Bx * (Cy - Ay) + Cx * (Ay - By))
-                center_2d = (
-                    ((Ax*Ax + Ay*Ay)*(By-Cy) + (Bx*Bx + By*By)*(Cy-Ay) + (Cx*Cx + Cy*Cy)*(Ay-By))/D,
-                    ((Ax*Ax + Ay*Ay)*(Cx-Bx) + (Bx*Bx + By*By)*(Ax-Cx) + (Cx*Cx + Cy*Cy)*(Bx-Ax))/D)
-
-            except ZeroDivisionError as err:
-                rospy.logwarn("Could not compute fingertip radius: zero division error")
-                return MAX_FINGERTIP_RADIUS
-        else:
-            radius = 0
-            center_2d = (0,0)
-
-        if self.geometer:
-            self.geometer.plane(palm_link, fingertip_plane_origin, n, radius, c=center_2d, key='fingertips', draw_triad=False)
-
-            for f,fl in FINGERS:
-                self.geometer.point(palm_link, tip[f], 0.01, key='f%d'%fl)
-                #self.geometer.line(palm_link, prox[f], bases[f], t=[0.0, 0.1], key='g%d'%fl)
-                self.geometer.line(palm_link, tip[f], bases_proj[f], t=[0.0, 0.02], key='g%dp'%fl)
-            self.geometer.publish()
-
-
-        # Limit the radius if the fingertips approach colinearity
-        return radius if radius < MAX_FINGERTIP_RADIUS else MAX_FINGERTIP_RADIUS
-
 
     def __init__(self, name='grasp', parent=None):
         # Delegates
@@ -260,11 +109,11 @@ class GraspAction(object):
 
         # Compute finger cage radii
         for i, inner, outer in self.inner_outer_indices:
-            self.finger_cage_radii[i] = self.compute_finger_cage_radius(msg.position[inner], msg.position[outer])
+            self.finger_cage_radii[i] = compute_finger_cage_radius(msg.position[inner], msg.position[outer])
         rospy.logdebug("Finger cage radii are: %s" % str(self.finger_cage_radii[i]))
 
         # Compute fingertip radius
-        self.tip_radius = self.compute_fingertip_radius()
+        self.tip_radius = compute_fingertip_radius(self.tf_prefix, self.listener, self.geometer)
         rospy.logdebug("Fingertip radius is: %g" % self.fingertip_radius)
 
         # Return if not active
@@ -344,7 +193,7 @@ class GraspAction(object):
             rospy.loginfo("Sending grasp command...")
             self.cmd_pub.publish(self.grasp_cmd)
             # Check if all joints are in velocity mode
-            if all([m == BHandCmdMode.MODE_TRAPEZOIDAL for m in masked_modes]):
+            if all([m == BHandCmdMode.MODE_VELOCITY for m in masked_modes]):
                 self.state = self.GRASPING
                 self.grasp_start_time = rospy.Time.now()
                 rospy.loginfo("Grasping...")
@@ -417,7 +266,7 @@ class GraspAction(object):
         for f_id, use_finger in enumerate(self.active_goal.grasp_mask):
             rospy.loginfo("Grasp %s finger %d" % ('using' if use_finger else 'not using', 1+f_id))
             # Grasp command
-            self.grasp_cmd.mode[f_id] = BHandCmd.MODE_TRAPEZOIDAL if use_finger else BHandCmd.MODE_SAME
+            self.grasp_cmd.mode[f_id] = BHandCmd.MODE_VELOCITY if use_finger else BHandCmd.MODE_SAME
             self.grasp_cmd.cmd[f_id] = self.active_goal.grasp_speed[f_id] if use_finger else 0.0
 
             # Hold command
