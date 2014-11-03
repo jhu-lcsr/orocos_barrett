@@ -56,15 +56,15 @@ class GraspAction(object):
         self.position_history = None
 
         self.inner_outer_indices = zip([0,1,2], [2,3,4], [5,6,7])
-        self.finger_cage_radii = [0,0,0]
-        self.fingertip_radius = 0
+        self.finger_cage_radii = None
+        self.fingertip_radius = None
 
         # ROS parameters
         self.use_geometer = rospy.get_param('~use_geometer', True)
         self.tf_prefix = rospy.get_param('~tf_prefix', '/wam/hand')
         self.feedback_period = rospy.Duration(rospy.get_param('~feedback_period', 0.1))
         self.static_vel_threshold = rospy.get_param('~static_vel_threshold', 0.1)
-        self.static_pos_threshold = rospy.get_param('~static_pos_threshold', 0.05)
+        self.static_pos_threshold = rospy.get_param('~static_pos_threshold', 0.01)
         self.vel_filter_cutoff = rospy.get_param('~vel_filter_cutoff', 0.5)
         self.pos_filter_cutoff = rospy.get_param('~pos_filter_cutoff', 0.5)
         self.min_static_duration = rospy.Duration(rospy.get_param('~min_static_duration', 0.1))
@@ -108,16 +108,15 @@ class GraspAction(object):
         """Determine when joints are done moving"""
 
         # Compute finger cage radii
-        for i, inner, outer in self.inner_outer_indices:
-            self.finger_cage_radii[i] = compute_finger_cage_radius(msg.position[inner], msg.position[outer])
-        rospy.logdebug("Finger cage radii are: %s" % str(self.finger_cage_radii[i]))
+        self.finger_cage_radii = [compute_finger_cage_radius(msg.position[i], msg.position[o]) for _,i,o in self.inner_outer_indices]
+        rospy.logdebug("Finger cage radii are: %s" % str(self.finger_cage_radii))
 
         # Compute fingertip radius
-        self.tip_radius = compute_fingertip_radius(self.tf_prefix, self.listener, self.geometer)
+        self.fingertip_radius = compute_fingertip_radius(self.tf_prefix, self.listener, self.geometer)
         rospy.logdebug("Fingertip radius is: %g" % self.fingertip_radius)
 
         # Return if not active
-        if self.server and not self.server.is_active():
+        if not self.server or (self.server and not self.server.is_active()):
             return
 
         # Add the latest joint state
@@ -161,14 +160,8 @@ class GraspAction(object):
         # Check the velocity
         for dof, (vel_hist, pos_hist)  in enumerate(zip(self.velocity_history, self.position_history)):
             # Mark the dof as done moving if it's below the static velocity threshold
-            if 0:
-                below_thresh = [abs(v) < self.static_vel_threshold for v in vel_hist]
-                print("dof %d %d%% below threshold" % (dof, 100*len([b for b in below_thresh if b])/len(below_thresh)))
-                if all(below_thresh):
-                    self.done_moving[dof] = True
-            else:
-                below_thresh = (max(pos_hist) - min(pos_hist)) < self.static_pos_threshold
-                self.done_moving[dof] = below_thresh
+            below_thresh = (max(pos_hist) - min(pos_hist)) < self.static_pos_threshold
+            self.done_moving[dof] = below_thresh
 
     def is_used(self, dof):
         if dof in [2, 3, 4]:
@@ -181,27 +174,42 @@ class GraspAction(object):
         """Interpret BHand status, send appropriate commands and update activity state"""
 
         # Return if not active
-        if self.server and not self.server.is_active():
+        if not self.server or not self.server.is_active():
             return
 
         # Get the masked modes
         masked_modes = [m for i, m in enumerate(msg.mode) if i < 3 and self.active_goal.grasp_mask[i]]
 
-        # Check the modes based on the activity states:
+        # Check failure conditions
+        if self.fingertip_radius and self.finger_cage_radii:
+            fingertips_good = self.active_goal.min_fingertip_radius < self.fingertip_radius
+            finger_cages_good = all(
+                [self.active_goal.min_fingertip_radius < r for r in self.finger_cage_radii])
 
+            rospy.logdebug('checking failure: fingertips: '+str(not fingertips_good)+' cages: '+str(not finger_cages_good))
+
+            if not fingertips_good or not finger_cages_good:
+                if not fingertips_good:
+                    rospy.logerr("Fingertip circle violated minimum radius.")
+                elif not finger_cages_good:
+                    rospy.logerr("Finger cages violated minimum radii.")
+                rospy.logerr("Aborting grasp goal...")
+                self.state = self.ABORTING
+
+        # Check the modes based on the activity states:
         if self.state == self.PREGRASP:
             rospy.loginfo("Sending grasp command...")
             self.cmd_pub.publish(self.grasp_cmd)
             # Check if all joints are in velocity mode
             if all([m == BHandCmdMode.MODE_VELOCITY for m in masked_modes]):
                 self.state = self.GRASPING
-                self.grasp_start_time = rospy.Time.now()
                 rospy.loginfo("Grasping...")
 
         elif self.state == self.GRASPING:
             # Check if all joints are in effort mode
             if not all([m == BHandCmdMode.MODE_TORQUE for m in masked_modes]):
                 # Check if the hand is done moving, and change to effort command
+                print('done moving: '+str(self.done_moving))
                 if all([dm for dof, dm in enumerate(self.done_moving) if self.is_used(dof)]):
                     rospy.loginfo("Sending hold command...")
                     self.cmd_pub.publish(self.hold_cmd)
@@ -209,33 +217,22 @@ class GraspAction(object):
                 self.state = self.HOLDING
 
         elif self.state == self.HOLDING:
-            fingertips_good = self.active_goal.min_fingertip_radius < self.fingertip_radius
-            finger_cages_good = all(
-                [self.active_goal.min_fingertip_radius < r for r in self.finger_cage_radii])
-
-            if not fingertips_good:
-                rospy.logerr("Fingertip circle violated minimum radius.")
-                self.server.set_aborted()
-            elif not finger_cages_good:
-                rospy.logerr("Finger cages violated minimum radii.")
-                self.server.set_aborted()
-            else:
-                rospy.loginfo("Grasped.")
-                self.server.set_succeeded()
+            rospy.loginfo("Grasped.")
+            self.server.set_succeeded()
 
             self.state = self.DONE
 
         elif self.state in [self.ABORTING, self.PREEMPTING]:
             # Check if all joints are in effort mode
             if not all([m == BHandCmdMode.MODE_IDLE for m in masked_modes]):
-                rospy.logwarn("Aborting grasp.")
+                rospy.logwarn("Idling fingers...")
                 self.cmd_pub.publish(self.abort_cmd)
             else:
                 if self.state == self.ABORTING:
                     self.server.set_aborted()
                 elif self.state == self.PREEMPTING:
                     self.server.set_preempted()
-                self.state = self.PREGRASP
+                self.state = self.DONE
 
         elif self.state == self.DONE:
             pass
@@ -257,7 +254,8 @@ class GraspAction(object):
         self.velocity_history = [deque() for i in range(8)]
         self.position_history = [deque() for i in range(8)]
         self.done_moving = [False] * 8
-        self.grasp_start_time = rospy.Time.now()
+        self.finger_cage_radii = None
+        self.fingertip_radius = None
 
         # Construct hand commands for grasping and holding
         self.grasp_cmd = BHandCmd()

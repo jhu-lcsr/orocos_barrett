@@ -16,7 +16,6 @@ add_action_files(
 add_message_files(
   FILES
   BHandCmd.msg
-  BHandCmdMode.msg
   BHandStatus.msg
   SafetyMode.msg
   RunMode.msg

@@ -112,7 +112,7 @@ namespace oro_barrett_sim {
   void HandSimDevice::writeSim(ros::Time time, RTT::Seconds period)
   {
     // Transmission ratio between two finger joints
-    static const double FINGER_JOINT_RATIO = 45.0/140.0;
+    static const double FINGER_JOINT_RATIO = 1.0/3.0;
 
     for(unsigned i=0; i<4; i++) {
       // Joint torque
@@ -123,8 +123,8 @@ namespace oro_barrett_sim {
       fingerToJointIDs(i, mid, did);
 
       double cmd = joint_cmd.cmd[i];
-      double pos = joint_position[mid];
-      double vel = (joint_velocity[mid]*140.0 + joint_velocity[did]*45.0) / (45.0 + 140.0);
+      double pos = joint_position[mid] + (i==3 ? 0 : joint_position[did]);
+      double vel = joint_velocity[mid] + (i==3 ? 0 : joint_velocity[did]);
 
       // Switch the control law based on the command mode
       switch(joint_cmd.mode[i])
@@ -166,50 +166,69 @@ namespace oro_barrett_sim {
 
       if(i == 3)
       {
-        // Spread
+        // Spread: both proximal joints should be kept at the same position
         double spread_err = joint_position[0] - joint_position[1];
         double spread_derr = joint_velocity[0] - joint_velocity[1];
-        double spread_constraint_force = 100*spread_err + 0*spread_derr;
+        double spread_constraint_force = 100.0*spread_err + 0.0*spread_derr;
         gazebo_joints[0]->SetForce(0,-spread_constraint_force + joint_torque);
         gazebo_joints[1]->SetForce(0,spread_constraint_force + joint_torque);
       }
       else
       {
-        // Fingers
+        // Fingers: handle TorqueSwitch semi-underactuated behavior
 
-        const double FINGER_GAIN = 10.0;
+        // Define the gain used to couple the two finger joints
+        const double KNUCKLE_GAIN = 10.0;
 
         // Get link and fingertip torque
         link_torque[i] = gazebo_joints[mid]->GetForceTorque(0).body2Torque.z;
         fingertip_torque[i] = gazebo_joints[did]->GetForceTorque(0).body2Torque.z;
 
-        // Check for torque switch condition
-        // NOTE: The below velocity threshold is too simple and does not capture the
+        // NOTE: The below threshold is too simple and does not capture the
         // real behavior.
-        //if(joint_velocity[mid] < 0.2) {
-          if(link_torque[i] > breakaway_torque) {
-            torque_switches[i] = true;
-          } else if(joint_torque < -breakaway_torque/4.0) {
-            torque_switches[i] = false;
-          }
-        //}
 
-        if(joint_torque > 0) {
-          if(!torque_switches[i]) {
-            gazebo_joints[mid]->SetForce(0,joint_torque);
-            gazebo_joints[did]->SetForce(0,FINGER_GAIN*(FINGER_JOINT_RATIO*joint_position[mid] - joint_position[did]));
-          } else {
-            gazebo_joints[mid]->SetForce(0,breakaway_torque);
-            gazebo_joints[did]->SetForce(0,FINGER_JOINT_RATIO*joint_torque);
-            breakaway_angle[i] = joint_position[did];
+        // TorqueSwitch simulation
+        //
+        // The following code aims to reproduce a behavior similar to the
+        // TorqueSwitch mechanism of the real Barrett Hand.
+        //
+        // Before the inner link's motion is obstructed, the outer link's
+        // position is linearly coupled to it by the finger joint ratio.
+        //
+        // When the inner link encounters a torque larger than the "breakaway"
+        // torque, the TorqueSwitch engages and the outer link begins to move
+        // inward independently.
+
+        if(!torque_switches[i]) {
+          // Check for torque switch engage condition
+          if(link_torque[i] > breakaway_torque) {
+            RTT::log(RTT::Debug) << "Enabling torque switch for F" << i+1 << RTT::endlog();
+            torque_switches[i] = true;
           }
         } else {
-          if(!torque_switches[i]) {
+          // Check for torque switch disengage condition
+          if(joint_torque < 0 && joint_position[mid] > 0.01) {
+            RTT::log(RTT::Debug) << "Disabling torque switch for F" << i+1 << RTT::endlog();
+            torque_switches[i] = false;
+          }
+        }
+
+        if(!torque_switches[i]) {
+          // Torque switch has not broken away
+          gazebo_joints[mid]->SetForce(0,joint_torque);
+          // Distal joint position is coupled with median joint position
+          gazebo_joints[did]->SetForce(0,KNUCKLE_GAIN*(FINGER_JOINT_RATIO*joint_position[mid] - joint_position[did]));
+        } else {
+          // Torque switch is in breakaway
+          if(joint_torque > 0) {
+            gazebo_joints[mid]->SetForce(0,breakaway_torque);
+            gazebo_joints[did]->SetForce(0,FINGER_JOINT_RATIO*joint_torque);
+            // Update the position during breakaway
+            breakaway_angle[i] = joint_position[did];
+          }else{
             gazebo_joints[mid]->SetForce(0,joint_torque);
-            gazebo_joints[did]->SetForce(0,FINGER_GAIN*(FINGER_JOINT_RATIO*joint_position[mid] - joint_position[did]));
-          } else {
-            gazebo_joints[mid]->SetForce(0,joint_torque);
-            gazebo_joints[did]->SetForce(0,breakaway_angle[i]);
+            // Keep the joint at the angle it was while it was still tightening
+            gazebo_joints[did]->SetForce(0,KNUCKLE_GAIN*(breakaway_angle[i] - joint_position[did]));
           }
         }
       }
@@ -309,11 +328,15 @@ namespace oro_barrett_sim {
 
           for(int i=0; i<N_PUCKS; i++) {
             // Update command vectors with input from ROS message
-            if(new_joint_cmd) 
+            if(new_joint_cmd)
             {
               switch(joint_cmd_tmp.mode[i]) {
                 case oro_barrett_msgs::BHandCmd::MODE_SAME:
                   continue;
+                case oro_barrett_msgs::BHandCmd::MODE_IDLE:
+                  joint_torque_cmd[i] = 0;
+                  new_torque_cmd = true;
+                  break;
                 case oro_barrett_msgs::BHandCmd::MODE_TORQUE:
                   joint_torque_cmd[i] = joint_cmd_tmp.cmd[i];
                   new_torque_cmd = true;
@@ -331,7 +354,7 @@ namespace oro_barrett_sim {
                   new_trapezoidal_cmd = true;
                   break;
                 default:
-                  RTT::log(RTT::Error) << "Bad BHand command mode: "<< joint_cmd_tmp.mode[i] << RTT::endlog();
+                  RTT::log(RTT::Error) << "Bad BHand command mode: "<< (int)joint_cmd_tmp.mode[i] << RTT::endlog();
                   return;
               };
               // Set the new command mode

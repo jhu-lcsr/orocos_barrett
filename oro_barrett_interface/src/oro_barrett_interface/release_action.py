@@ -22,6 +22,12 @@ class ReleaseAction(object):
     ABORTING = 2
     PREEMPTING = 3
 
+    def is_convex(self, j1, j2):
+        c = j1 < pi / 2.0 and (j2 + j1) < pi / 4.0
+        #if not c:
+        #print('not convex: %g,  %g' % (j1, j2))
+        return c
+
     def __init__(self, name='release', parent=None):
         # Delegates
         self.server = None
@@ -75,24 +81,18 @@ class ReleaseAction(object):
 
         if self.active_goal:
 
-            def is_convex(j1, j2):
-                c = j1 < pi / 2.0 and (j2 + j1) < pi / 4.0
-                #if not c:
-                #print('not convex: %g,  %g' % (j1, j2))
-                return c
-
             # Check if each finger is done
             for i, inner, outer in zip([0,1,2], [2,3,4] ,[5,6,7]):
                 if self.active_goal.stop_mode[i] == BHandReleaseGoal.STOP_WHEN_CONVEX:
-                    self.done[i] = is_convex(msg.position[inner], msg.position[outer])
+                    self.done[i] = self.is_convex(msg.position[inner], msg.position[outer])
                 elif self.active_goal.stop_mode[i] == BHandReleaseGoal.STOP_AT_POSITION:
-                    self.done[i] = msg.position[inner] + msg.position[outer] > self.active_goal.stop_angle
+                    self.done[i] = abs((msg.position[inner] + msg.position[outer]) - self.active_goal.stop_angle[i]) < 0.01
 
     def status_cb(self, msg):
         """Interpret BHand status, send appropriate commands and update activity state"""
 
         # Return if not active
-        if self.server and not self.server.is_active():
+        if not self.server or not self.server.is_active():
             return
 
         # Get the masked modes
