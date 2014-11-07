@@ -173,6 +173,7 @@ namespace oro_barrett_interface {
 
       std::string owner_name = parent_service->getOwner()->getName();
       joint_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/wam/joint_states"));
+      joint_resolver_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/wam/resolver_states"));
       status_out.createStream(rtt_roscomm::topic("~"+owner_name+"/status"));
 
       // Resize joint names
