@@ -54,9 +54,11 @@ with the `zerocal.py` script.
 1. Bring up the WAM robot you want to calibrate and make sure it is in `IDLE`
    mode.
 2. Run the `zerocal.py` script in the namespace of the barrett manager:
+
     ```
     rosrun oro_barrett_hw zerocal.py path/to/config/for/wam_60.yaml __ns:=/barrett/barrett_manager
     ```
+
 3. Manually position the arm to the exact home position using the appropriate
    jigs and levels.
 4. Once the arm is exactly position, hit the `enter` key in the shell running
