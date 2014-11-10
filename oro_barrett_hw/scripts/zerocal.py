@@ -109,9 +109,11 @@ def main():
         sys.stdout.flush()
 
         # process stdin
+        s = None
         try:
             rlist, _, _ = select.select([sys.stdin], [], [], timeout)
-            s = sys.stdin.readline().rstrip()
+            if rlist:
+                s = sys.stdin.readline().rstrip()
         except select.error as err:
             break
         except IOError as err:
@@ -121,26 +123,28 @@ def main():
         # check if we received a position
         if not pos: continue
 
-        try:
-            s_int = int(s) - 1
-            if s_int in range(0,len(pos)):
-                pos_locked[s_int] ^= True 
-                print('')
-                if pos_locked[s_int]:
-                    print(('Holding resolver reading %d at '+f+' for home position.') % (s_int+1, pos[s_int]))
+        # try to parse the 
+        if s:
+            try:
+                s_int = int(s) - 1
+                if s_int in range(0,len(pos)):
+                    pos_locked[s_int] ^= True 
+                    print('')
+                    if pos_locked[s_int]:
+                        print(('Holding resolver reading %d at '+f+' for home position.') % (s_int+1, pos[s_int]))
+                    else:
+                        print('Reading resolver %d current value.' % (s_int+1))
                 else:
-                    print('Reading resolver %d current value.' % (s_int+1))
-            else:
-                print('')
-                print('Joint index out of range! Not changing and read modes.')
-        except ValueError as ex:
-            pass
+                    print('')
+                    print('Joint index out of range! Not changing and read modes.')
+            except ValueError as ex:
+                pass
 
-        if s == 's' and pos:
-            s = sys.stdin.readline().rstrip()
-            print('')
-            save = raw_input('Save resolver state in %s? [Y/n]: ' % file_path).rstrip().lower() in ['','y']
-            break
+            if s == 's' and pos:
+                s = sys.stdin.readline().rstrip()
+                print('')
+                save = raw_input('Save resolver state in %s? [Y/n]: ' % file_path).rstrip().lower() in ['','y']
+                break
 
     if save:
         for c, d in blocks:
@@ -150,7 +154,7 @@ def main():
         yaml_dump_pc(blocks, file_path)
         print('Saved resolver state in %s.' % file_path)
     else:
-        print('No files changed.')
+        print('\nNo files changed.')
 
     return 0
 
