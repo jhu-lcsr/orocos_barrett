@@ -340,13 +340,13 @@ namespace oro_barrett_hw {
       this->center_of_mass_debug_out.write(com_msg);
 
       // Write out hand status
-      Eigen::Map<Eigen::VectorXd>(this->status_msg.temperature,4) = this->temperature;
-      for(unsigned i=0; i<Hand::DOF; i++) {
+      for(unsigned i=0; i<barrett::Hand::DOF; i++) {
         unsigned bit = 1<<i;
         if(mode_torque & bit)       this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_TORQUE;
         if(mode_position & bit)     this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_PID;
         if(mode_trapezoidal & bit)  this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL;
         if(mode_velocity & bit)     this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
+        this->status_msg.temperature[i] = this->temperature(i);
       }
       this->status_out.write(this->status_msg);
 
