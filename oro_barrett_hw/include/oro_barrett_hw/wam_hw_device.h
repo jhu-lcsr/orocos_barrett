@@ -339,6 +339,10 @@ namespace oro_barrett_hw {
           };
 
           break;
+
+        case ESTOP:
+          this->parent_service_->getOwner()->error();
+          return;
       };
 
       // Check effort limits
