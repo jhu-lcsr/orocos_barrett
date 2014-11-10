@@ -70,7 +70,16 @@ def main():
         print("Initializing with existing YAML file: %s" % file_path)
         # open existing config file
         blocks = yaml_load_pc(file_path)
-    print("Hit enter / return to save the resolver offset, ctrl-c to exit.")
+
+        for c, d in blocks:
+            if 'home_resolver_offset' in d:
+                pos = d['home_resolver_offset']
+            if 'home_position' in d:
+                print("The desired home positions for joints 1-7 are:\n   "+str(d['home_position'])+"\n")
+    else:
+        pos = None
+
+    print("Hit 1-7 to toggle readimg the calibration offset for a given joint's home position and 's' to save the resolver offset, ctrl-c to exit.")
 
     # subscribe to resolver states
     resolver_sub = rospy.Subscriber('wam/resolver_states', sensor_msgs.msg.JointState, resolver_states_cb)
@@ -79,14 +88,22 @@ def main():
     timeout=0.1
 
     r = rospy.Rate(1)
-    pos = None
+    pos_locked = None
     save = False
     global resolver_states
     while not rospy.is_shutdown():
         # print the resolver state
         if resolver_states:
-            pos = resolver_states.position
-            print(('resolvers: [ '+', '.join([f]*len(pos))+' ]') % pos, end='\r')
+            pos_cur = resolver_states.position
+            if not pos_locked:
+                pos_locked = [True] * len(pos_cur)
+            if not pos:
+                pos = [0.0] * len(pos_cur)
+            pos = [p if locked else pc for p,pc,locked in zip(pos, pos_cur, pos_locked)]
+            print(  '   <<  resolvers: [',
+                    ', '.join([('\033[92m%2.4f\033[0m' if l else '\033[93m%2.4f\033[0m') % v for v,l in zip(pos,pos_locked)]),
+                    ']',
+                    end='\r')
         else:
             print('Waiting for resolver state message...', end='\r')
         sys.stdout.flush()
@@ -94,10 +111,32 @@ def main():
         # process stdin
         try:
             rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+            s = sys.stdin.readline().rstrip()
         except select.error as err:
             break
+        except IOError as err:
+            print('\n')
+            break
 
-        if rlist and pos:
+        # check if we received a position
+        if not pos: continue
+
+        try:
+            s_int = int(s) - 1
+            if s_int in range(0,len(pos)):
+                pos_locked[s_int] ^= True 
+                print('')
+                if pos_locked[s_int]:
+                    print(('Holding resolver reading %d at '+f+' for home position.') % (s_int+1, pos[s_int]))
+                else:
+                    print('Reading resolver %d current value.' % (s_int+1))
+            else:
+                print('')
+                print('Joint index out of range! Not changing and read modes.')
+        except ValueError as ex:
+            pass
+
+        if s == 's' and pos:
             s = sys.stdin.readline().rstrip()
             print('')
             save = raw_input('Save resolver state in %s? [Y/n]: ' % file_path).rstrip().lower() in ['','y']
