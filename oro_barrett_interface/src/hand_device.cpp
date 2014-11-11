@@ -34,7 +34,11 @@ namespace oro_barrett_interface {
     knuckle_torque(4),
 
     // Throttles
-    joint_state_throttle(0.01)
+    joint_state_throttle(0.01),
+
+    // Action servers
+    initialize_action_server_("initialize_action", 1.0),
+    set_mode_action_server_("bhand_set_mode_action", 1.0)
   {
     RTT::Service::shared_ptr hand_service = parent_service->provides("hand");
     hand_service->doc("Barrett Hand interface.");
@@ -156,6 +160,14 @@ namespace oro_barrett_interface {
     joint_state.position.resize(8);
     joint_state.velocity.resize(8);
     joint_state.effort.resize(8);
+
+    // Set up action servers
+    set_mode_action_server_.addPorts(parent_service->provides("bhand_set_mode_action"), true, "~"+owner_name+"/hand/set_mode_action/");
+    set_mode_action_server_.registerGoalCallback(boost::bind(&HandDevice::set_mode_goal_cb, this, _1));
+    set_mode_action_server_.start();
+    initialize_action_server_.addPorts(parent_service->provides("initialize_action"), true, "~"+owner_name+"/hand/initialize_action/");
+    initialize_action_server_.registerGoalCallback(boost::bind(&HandDevice::initialize_goal_cb, this, _1));
+    initialize_action_server_.start();
   }
 
   HandDevice::~HandDevice()
@@ -247,4 +259,28 @@ namespace oro_barrett_interface {
     xyzm[3] = total_inertia.getMass();
   }
 
+  void HandDevice::initialize_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::BHandInitAction> gh) {
+    RTT::log(RTT::Info) << "Initializing the BHand." << RTT::endlog();
+    gh.setAccepted();
+    this->initialize();
+    oro_barrett_msgs::BHandInitResult result;
+    gh.setSucceeded(result);
+  }
+
+  void HandDevice::set_mode_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::BHandSetModeAction> gh) {
+    if(gh.getGoal()->run_mode.value == oro_barrett_msgs::RunMode::RUN) {
+      RTT::log(RTT::Info) << "Switching BHand to RUN mode." << RTT::endlog();
+      gh.setAccepted();
+      this->run();
+    } else if(gh.getGoal()->run_mode.value == oro_barrett_msgs::RunMode::IDLE) {
+      RTT::log(RTT::Info) << "Switching BHand to IDLE mode." << RTT::endlog();
+      gh.setAccepted();
+      this->idle();
+    } else {
+      gh.setRejected();
+      return;
+    }
+    oro_barrett_msgs::BHandSetModeResult result;
+    gh.setSucceeded(result);
+  }
 }
