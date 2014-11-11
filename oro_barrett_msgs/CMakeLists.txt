@@ -11,7 +11,9 @@ add_action_files(
   SetMode.action
   BHandGrasp.action
   BHandRelease.action
-  BHandSpread.action)
+  BHandSpread.action
+  BHandSetMode.action
+  BHandInit.action)
 
 add_message_files(
   FILES

@@ -170,6 +170,8 @@ namespace oro_barrett_interface {
         .doc("Disable writing of commands and start reading additional data needed for calibration.");
       wam_service->addOperation("estop", &WamDevice::estop, this, RTT::OwnThread)
         .doc("Trigger an e-stop via software.");
+      wam_service->addOperation("getSafetyMode", &WamDevice::getSafetyMode, this, RTT::OwnThread)
+        .doc("Get the current safety mode.");
 
       std::string owner_name = parent_service->getOwner()->getName();
       joint_state_out.createStream(rtt_roscomm::topic("~"+owner_name+"/wam/joint_states"));
@@ -397,7 +399,7 @@ namespace oro_barrett_interface {
 
     void set_home_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::SetHomeAction> gh) {
       if(safety_mode == oro_barrett_msgs::SafetyMode::IDLE) {
-        RTT::log(RTT::Info) << "Homing the WAM mode." << RTT::endlog();
+        RTT::log(RTT::Info) << "Homing the WAM." << RTT::endlog();
         gh.setAccepted();
         this->initialize();
         oro_barrett_msgs::SetHomeResult result;
