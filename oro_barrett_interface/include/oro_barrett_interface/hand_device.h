@@ -15,12 +15,17 @@
 
 #include <oro_barrett_msgs/BHandCmd.h>
 #include <oro_barrett_msgs/BHandStatus.h>
+#include <oro_barrett_msgs/BHandSetModeAction.h>
+#include <oro_barrett_msgs/BHandInitAction.h>
 
 #include <kdl/tree.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/frames_io.hpp>
 
 #include <geometry_msgs/PoseStamped.h>
+
+#include <rtt_actionlib/rtt_actionlib.h>
+#include <rtt_actionlib/rtt_action_server.h>
 
 namespace oro_barrett_interface {
 
@@ -184,6 +189,13 @@ namespace oro_barrett_interface {
     void computeCenterOfMass(Eigen::VectorXd &xyzm);
     void computeCenterOfMassDebug();
     void computeCenterOfMass(Eigen::VectorXd &xyzm, bool debug);
+
+    //! Action servers
+    rtt_actionlib::RTTActionServer<oro_barrett_msgs::BHandInitAction> initialize_action_server_;
+    rtt_actionlib::RTTActionServer<oro_barrett_msgs::BHandSetModeAction> set_mode_action_server_;
+
+    void initialize_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::BHandInitAction> gh);
+    void set_mode_goal_cb(actionlib::ServerGoalHandle<oro_barrett_msgs::BHandSetModeAction> gh);
   };
 
 }
