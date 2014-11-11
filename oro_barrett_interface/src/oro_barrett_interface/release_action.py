@@ -5,7 +5,7 @@ import rospy
 import actionlib
 
 from sensor_msgs.msg import JointState
-from oro_barrett_msgs.msg import BHandReleaseAction, BHandReleaseGoal, BHandStatus, BHandCmd, BHandCmdMode
+from oro_barrett_msgs.msg import BHandReleaseAction, BHandReleaseGoal, BHandStatus, BHandCmd
 
 from .hand_metrics import compute_fingertip_radius
 from .hand_metrics import compute_finger_cage_radius
@@ -103,17 +103,17 @@ class ReleaseAction(object):
             rospy.loginfo("Sending release command...")
             self.cmd_pub.publish(self.release_cmd)
             # Check if all joints are in velocity mode
-            if all([m == BHandCmdMode.MODE_VELOCITY for m in masked_modes]):
+            if all([m == BHandCmd.MODE_VELOCITY for m in masked_modes]):
                 self.state = self.RELEASING
                 rospy.loginfo("Releasing...")
 
         elif self.state == self.RELEASING:
             # Disable fingers which are done
-            if not all([m == BHandCmdMode.MODE_PID for m in masked_modes]):
+            if not all([m == BHandCmd.MODE_PID for m in masked_modes]):
                 for f_id, done in enumerate(self.done):
                     # Stop the finger if it's done
                     if done:
-                        self.release_cmd.mode[f_id] = BHandCmdMode.MODE_PID
+                        self.release_cmd.mode[f_id] = BHandCmd.MODE_PID
                         self.release_cmd.cmd[f_id] = self.position[f_id]
                 self.cmd_pub.publish(self.release_cmd)
             else:
@@ -124,7 +124,7 @@ class ReleaseAction(object):
 
         elif self.state in [self.ABORTING, self.PREEMPTING]:
             # Check if all joints are in effort mode
-            if not all([m == BHandCmdMode.MODE_IDLE for m in masked_modes]):
+            if not all([m == BHandCmd.MODE_IDLE for m in masked_modes]):
                 rospy.logwarn("Aborting release.")
                 self.cmd_pub.publish(self.abort_cmd)
             else:

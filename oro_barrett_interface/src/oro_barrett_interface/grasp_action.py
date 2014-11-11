@@ -15,7 +15,7 @@ except ImportError as err:
     pass
 
 from sensor_msgs.msg import JointState
-from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd, BHandCmdMode
+from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd
 
 from .hand_metrics import compute_fingertip_radius
 from .hand_metrics import compute_finger_cage_radius
@@ -201,13 +201,13 @@ class GraspAction(object):
             rospy.loginfo("Sending grasp command...")
             self.cmd_pub.publish(self.grasp_cmd)
             # Check if all joints are in velocity mode
-            if all([m == BHandCmdMode.MODE_VELOCITY for m in masked_modes]):
+            if all([m == BHandCmd.MODE_VELOCITY for m in masked_modes]):
                 self.state = self.GRASPING
                 rospy.loginfo("Grasping...")
 
         elif self.state == self.GRASPING:
             # Check if all joints are in effort mode
-            if not all([m == BHandCmdMode.MODE_TORQUE for m in masked_modes]):
+            if not all([m == BHandCmd.MODE_TORQUE for m in masked_modes]):
                 # Check if the hand is done moving, and change to effort command
                 print('done moving: '+str(self.done_moving))
                 if all([dm for dof, dm in enumerate(self.done_moving) if self.is_used(dof)]):
@@ -224,7 +224,7 @@ class GraspAction(object):
 
         elif self.state in [self.ABORTING, self.PREEMPTING]:
             # Check if all joints are in effort mode
-            if not all([m == BHandCmdMode.MODE_IDLE for m in masked_modes]):
+            if not all([m == BHandCmd.MODE_IDLE for m in masked_modes]):
                 rospy.logwarn("Idling fingers...")
                 self.cmd_pub.publish(self.abort_cmd)
             else:
