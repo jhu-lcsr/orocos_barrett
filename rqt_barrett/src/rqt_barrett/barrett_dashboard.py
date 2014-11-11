@@ -5,6 +5,8 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget,QPalette,QColor
 from python_qt_binding.QtCore import Qt,QTimer,Signal
+from python_qt_binding.Qwt.Qwt import QwtThermo
+
 import random
 import actionlib
 
@@ -55,6 +57,7 @@ class BarrettDashboard(Plugin):
 
         # Add widget to the user interface
         context.add_widget(self._widget)
+        self.context = context
 
         jp_widgets = [getattr(self._widget,'jp_%d' % i) for i in range(7)]
         jn_widgets = [getattr(self._widget,'jn_%d' % i) for i in range(7)]
@@ -89,25 +92,33 @@ class BarrettDashboard(Plugin):
 
         self.barrett_green = QColor(87,186,142)
         self.barrett_green_dark = self.barrett_green.darker()
+        self.barrett_green_light = self.barrett_green.lighter()
         self.barrett_blue = QColor(80,148,204)
         self.barrett_blue_dark = self.barrett_blue.darker()
-        self.barrett_red = QColor(232,97,97)
+        self.barrett_blue_light = self.barrett_blue.lighter()
+        self.barrett_red = QColor(232,47,47)
         self.barrett_red_dark = self.barrett_red.darker()
+        self.barrett_red_light = self.barrett_red.lighter()
         self.barrett_orange = QColor(255,103,43)
         self.barrett_orange_dark = self.barrett_orange.darker()
 
-        background_color = Qt.black
+        #background_color = p.mid().color()
+        joint_bg_color = self.barrett_blue_dark.darker()
         joint_fill_color = self.barrett_blue
+        joint_alarm_color = self.barrett_blue #self.barrett_blue_light
+        torque_bg_color = self.barrett_green_dark.darker()
         torque_fill_color = self.barrett_green
-        joint_alarm_color = self.barrett_red
-        torque_alarm_color = self.barrett_orange
+        torque_alarm_color = self.barrett_orange #self.barrett_green_light
+        temp_bg_color = self.barrett_red_dark.darker()
+        temp_fill_color = self.barrett_orange
+        temp_alarm_color = self.barrett_red
 
         for w in jp_widgets + jn_widgets:
-            w.setAlarmLevel(0.66)
+            w.setAlarmLevel(0.80)
             w.setFillColor(joint_fill_color)
             w.setAlarmColor(joint_alarm_color)
             p = w.palette()
-            p.setColor(tp.backgroundRole(), p.mid().color())
+            p.setColor(tp.backgroundRole(), joint_bg_color)
             w.setPalette(p)
 
         for w in tp_widgets + tn_widgets:
@@ -115,8 +126,19 @@ class BarrettDashboard(Plugin):
             w.setFillColor(torque_fill_color)
             w.setAlarmColor(torque_alarm_color)
             p = w.palette()
-            p.setColor(tp.backgroundRole(), p.mid().color())
+            p.setColor(tp.backgroundRole(), torque_bg_color)
             w.setPalette(p)
+
+        self._widget.hand_temp.setAlarmLevel(0.66)
+        self._widget.hand_temp.setFillColor(temp_fill_color)
+        self._widget.hand_temp.setAlarmColor(temp_alarm_color)
+        p = self._widget.hand_temp.palette()
+        p.setColor(self._widget.hand_temp.backgroundRole(), temp_bg_color)
+        self._widget.hand_temp.setPalette(p)
+        self._widget.hand_temp.setOrientation(Qt.Horizontal, QwtThermo.RightScale)
+
+        self._widget.jf_0.setStyleSheet("QLabel { background-color : rgb(%d,%d,%d); color : rgb(%d,%d,%d); }" % (
+            joint_bg_color.red(), joint_bg_color.green(), joint_bg_color.blue(), joint_fill_color.red(), joint_fill_color.green(), joint_fill_color.blue()))
 
         self.urdf = rospy.get_param('robot_description')
         self.robot = URDF()
@@ -135,6 +157,11 @@ class BarrettDashboard(Plugin):
                 oro_barrett_msgs.msg.BarrettStatus,
                 self._status_cb)
 
+        self._hand_status_sub = rospy.Subscriber(
+                'hand/status',
+                oro_barrett_msgs.msg.BHandStatus,
+                self._hand_status_cb)
+
         self.update_timer = QTimer(self)
         self.update_timer.setInterval(50)
         self.update_timer.timeout.connect(self._update_widget_values)
@@ -143,6 +170,7 @@ class BarrettDashboard(Plugin):
         self._update_status(-1)
         self.safety_mode = -1
         self.run_mode = 0
+        self.hand_max_temperature = 25.0
 
         self.set_home_client = actionlib.SimpleActionClient(
                 'wam/set_home_action',
@@ -154,6 +182,30 @@ class BarrettDashboard(Plugin):
         self._widget.button_set_home.clicked[bool].connect(self._handle_set_home_clicked)
         self._widget.button_idle_wam.clicked[bool].connect(self._handle_idle_wam_clicked)
         self._widget.button_run_wam.clicked[bool].connect(self._handle_run_wam_clicked)
+
+        self.bhand_init_client = actionlib.SimpleActionClient(
+                'hand/initialize_action',
+                oro_barrett_msgs.msg.BHandInitAction)
+        self.bhand_set_mode_client = actionlib.SimpleActionClient(
+                'hand/set_mode_action',
+                oro_barrett_msgs.msg.BHandSetModeAction)
+
+        self._widget.button_intialize_hand.clicked[bool].connect(self._handle_initialize_hand_clicked)
+        self._widget.button_idle_hand.clicked[bool].connect(self._handle_idle_hand_clicked)
+        self._widget.button_run_hand.clicked[bool].connect(self._handle_run_hand_clicked)
+
+        self._widget.button_open_hand.clicked[bool].connect(self._handle_open_hand_clicked)
+        self._widget.button_close_hand.clicked[bool].connect(self._handle_close_hand_clicked)
+
+        self._widget.resizeEvent = self._handle_resize
+
+    def _handle_resize(self, event):
+        for i,((w1,w2),(w3,w4)) in enumerate(zip(self.joint_widgets, self.torque_widgets)):
+            width = 0.8*getattr(self._widget, 'jcc_%d'%i).contentsRect().width()
+            w1.setPipeWidth(width)
+            w2.setPipeWidth(width)
+            w3.setPipeWidth(width)
+            w4.setPipeWidth(width)
 
     def _handle_set_home_clicked(self, checked):
         if checked:
@@ -199,8 +251,9 @@ class BarrettDashboard(Plugin):
                     color = self.barrett_green
 
         darker = color.darker()
+        lighter = color.lighter()
         self._widget.safety_mode.setStyleSheet("QLabel { background-color : rgb(%d,%d,%d); color : rgb(%d,%d,%d); }" % (
-            color.red(), color.green(), color.blue(), darker.red(), darker.green(), darker.blue()))
+            color.red(), color.green(), color.blue(), lighter.red(), lighter.green(), lighter.blue()))
 
     def _update_widget_values(self):
 
@@ -211,6 +264,7 @@ class BarrettDashboard(Plugin):
                 tp.setValue(v if v >=0 else 0)
                 tn.setValue(-v if v <0 else 0)
 
+
             for (v,(jp,jn)) in zip(self.pos_norm,self.joint_widgets):
                 jp.setEnabled(True)
                 jn.setEnabled(True)
@@ -220,6 +274,8 @@ class BarrettDashboard(Plugin):
             for (p,n) in self.joint_widgets + self.torque_widgets:
                 p.setEnabled(True)
                 n.setEnabled(True)
+
+        self._widget.hand_temp.setValue((self.hand_max_temperature-50.0)/(65.0-50.0))
 
         self._update_status(self.safety_mode)
         self._update_buttons(self.run_mode)
@@ -264,6 +320,10 @@ class BarrettDashboard(Plugin):
         self.safety_mode = msg.safety_mode.value
         self.run_mode = msg.run_mode.value
         self.homed = msg.homed
+
+    def _hand_status_cb(self, msg):
+        self.hand_initialized = msg.initialized
+        self.hand_max_temperature = max(msg.temperature)
             
     def _handle_set_home_clicked(self, checked):
         goal = oro_barrett_msgs.msg.SetHomeGoal()
@@ -281,3 +341,26 @@ class BarrettDashboard(Plugin):
             goal.mode.value = oro_barrett_msgs.msg.RunMode.RUN
             self.set_mode_client.send_goal(goal)
 
+    def _handle_initialize_hand_clicked(self, checked):
+        if self.safety_mode ==  oro_barrett_msgs.msg.SafetyMode.IDLE:
+            goal = oro_barrett_msgs.msg.BHandInitGoal()
+            self.bhand_init_client.send_goal(goal)
+
+    def _handle_run_hand_clicked(self, checked):
+        if checked:
+            goal = oro_barrett_msgs.msg.BHandSetModeGoal()
+            goal.run_mode.value = oro_barrett_msgs.msg.RunMode.RUN
+            self.bhand_set_mode_client.send_goal(goal)
+
+    def _handle_idle_hand_clicked(self, checked):
+        if checked:
+            goal = oro_barrett_msgs.msg.BHandSetModeGoal()
+            goal.run_mode.value = oro_barrett_msgs.msg.RunMode.IDLE
+            self.bhand_set_mode_client.send_goal(goal)
+
+    def _handle_open_hand_clicked(self, checked):
+        pass
+
+    def _handle_close_hand_clicked(self, checked):
+        pass
+        
