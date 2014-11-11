@@ -7,7 +7,7 @@ import rospy
 import actionlib
 
 from sensor_msgs.msg import JointState
-from oro_barrett_msgs.msg import BHandSpreadAction, BHandStatus, BHandCmd, BHandCmdMode
+from oro_barrett_msgs.msg import BHandSpreadAction, BHandStatus, BHandCmd
 
 
 class SpreadAction(object):
@@ -102,7 +102,7 @@ class SpreadAction(object):
             rospy.loginfo("Sending spread command...")
             self.cmd_pub.publish(self.spread_cmd)
             # Check if spread is in velocity mode
-            if spread_mode == BHandCmdMode.MODE_TRAPEZOIDAL:
+            if spread_mode == BHandCmd.MODE_TRAPEZOIDAL:
                 self.state = self.SPREADING
                 self.spread_start_time = rospy.Time.now()
                 rospy.loginfo("Spreading...")
@@ -119,7 +119,7 @@ class SpreadAction(object):
 
         elif self.state in [self.ABORTING, self.PREEMPTING]:
             # Check if all joints are in effort mode
-            if not all([m == BHandCmdMode.MODE_IDLE for m in masked_modes]):
+            if not all([m == BHandCmd.MODE_IDLE for m in masked_modes]):
                 rospy.logwarn("Aborting spread.")
                 self.cmd_pub.publish(self.abort_cmd)
             else:

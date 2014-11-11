@@ -17,7 +17,7 @@ except ImportError as err:
     pass
 
 from sensor_msgs.msg import JointState
-from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd, BHandCmdMode
+from oro_barrett_msgs.msg import BHandGraspAction, BHandStatus, BHandCmd 
 
 
 F1 = 0
@@ -84,7 +84,7 @@ def compute_circle_parameters(points):
              points_rot[0][2]])
 
     except ZeroDivisionError as err:
-        rospy.logwarn("Could not compute fingertip radius: zero division error")
+        rospy.logdebug("Could not compute fingertip radius: zero division error")
         return {'n':normal, 'p':np.array([0,0,0]), 'r':0}
 
     # rotate the center back into the coordinates of the original points
