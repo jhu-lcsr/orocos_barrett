@@ -197,7 +197,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
-                    <height>50</height>
+                    <height>30</height>
                    </size>
                   </property>
                   <property name="autoFillBackground">
@@ -234,7 +234,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
-                    <height>50</height>
+                    <height>30</height>
                    </size>
                   </property>
                   <property name="autoFillBackground">
@@ -303,7 +303,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -340,7 +340,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -408,7 +408,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -445,7 +445,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -513,7 +513,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -550,7 +550,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -634,7 +634,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -671,7 +671,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -739,7 +739,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -776,7 +776,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -844,7 +844,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -881,7 +881,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -973,7 +973,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1010,7 +1010,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1078,7 +1078,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1115,7 +1115,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1183,7 +1183,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1220,7 +1220,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1288,7 +1288,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1325,7 +1325,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1409,7 +1409,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1446,7 +1446,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1514,7 +1514,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1551,7 +1551,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1619,7 +1619,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1656,7 +1656,7 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>50</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="autoFillBackground">
@@ -1898,7 +1898,7 @@
             <widget class="QPushButton" name="button_open_hand">
              <property name="minimumSize">
               <size>
-               <width>80</width>
+               <width>50</width>
                <height>0</height>
               </size>
              </property>
@@ -1911,7 +1911,7 @@
             <widget class="QPushButton" name="button_close_hand">
              <property name="minimumSize">
               <size>
-               <width>80</width>
+               <width>50</width>
                <height>0</height>
               </size>
              </property>
