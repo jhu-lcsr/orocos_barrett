@@ -162,15 +162,19 @@ class BarrettDashboard(Plugin):
                 oro_barrett_msgs.msg.BHandStatus,
                 self._hand_status_cb)
 
+        self._update_status(-1)
+        self.safety_mode = -1
+        self.run_mode = 0
+        self.hand_run_mode = 0
+        self.hand_min_temperature = 40.0
+        self.hand_max_temperature = 65.0
+        self.hand_temperature = 0.0
+
         self.update_timer = QTimer(self)
         self.update_timer.setInterval(50)
         self.update_timer.timeout.connect(self._update_widget_values)
         self.update_timer.start()
 
-        self._update_status(-1)
-        self.safety_mode = -1
-        self.run_mode = 0
-        self.hand_max_temperature = 25.0
 
         self.set_home_client = actionlib.SimpleActionClient(
                 'wam/set_home_action',
@@ -190,7 +194,7 @@ class BarrettDashboard(Plugin):
                 'hand/set_mode_action',
                 oro_barrett_msgs.msg.BHandSetModeAction)
 
-        self._widget.button_intialize_hand.clicked[bool].connect(self._handle_initialize_hand_clicked)
+        self._widget.button_initialize_hand.clicked[bool].connect(self._handle_initialize_hand_clicked)
         self._widget.button_idle_hand.clicked[bool].connect(self._handle_idle_hand_clicked)
         self._widget.button_run_hand.clicked[bool].connect(self._handle_run_hand_clicked)
 
@@ -275,18 +279,25 @@ class BarrettDashboard(Plugin):
                 p.setEnabled(True)
                 n.setEnabled(True)
 
-        self._widget.hand_temp.setValue((self.hand_max_temperature-50.0)/(65.0-50.0))
+        self._widget.hand_temp.setValue((self.hand_temperature-self.hand_min_temperature)/(self.hand_max_temperature-self.hand_min_temperature))
 
         self._update_status(self.safety_mode)
-        self._update_buttons(self.run_mode)
+        self._update_buttons(self.run_mode, self.hand_run_mode)
 
-    def _update_buttons(self, run_mode):
+    def _update_buttons(self, run_mode, hand_run_mode):
         if run_mode == oro_barrett_msgs.msg.RunMode.IDLE:
             self._widget.button_idle_wam.setChecked(True)
             self._widget.button_run_wam.setChecked(False)
         else:
             self._widget.button_idle_wam.setChecked(False)
             self._widget.button_run_wam.setChecked(True)
+
+        if hand_run_mode == oro_barrett_msgs.msg.RunMode.RUN:
+            self._widget.button_idle_hand.setChecked(False)
+            self._widget.button_run_hand.setChecked(True)
+        else:
+            self._widget.button_idle_hand.setChecked(True)
+            self._widget.button_run_hand.setChecked(False)
 
 
     def shutdown_plugin(self):
@@ -321,9 +332,17 @@ class BarrettDashboard(Plugin):
         self.run_mode = msg.run_mode.value
         self.homed = msg.homed
 
+        if self.safety_mode == oro_barrett_msgs.msg.SafetyMode.ACTIVE:
+            self._widget.button_initialize_hand.setEnabled(False)
+        elif self.safety_mode == oro_barrett_msgs.msg.SafetyMode.ESTOP:
+            self._widget.button_initialize_hand.setEnabled(False)
+            self._widget.button_idle_hand.setEnabled(False)
+            self._widget.button_run_hand.setEnabled(False)
+
     def _hand_status_cb(self, msg):
         self.hand_initialized = msg.initialized
-        self.hand_max_temperature = max(msg.temperature)
+        self.hand_temperature = max(msg.temperature)
+        self.hand_run_mode = msg.run_mode.value
             
     def _handle_set_home_clicked(self, checked):
         goal = oro_barrett_msgs.msg.SetHomeGoal()
