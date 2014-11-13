@@ -11,7 +11,7 @@ namespace oro_barrett_interface {
         const std::string &urdf_prefix_) :
     parent_service_(parent_service),
 
-    run_mode(IDLE),
+    run_mode(UNINITIALIZED),
 
     joint_actuation(8),
 
@@ -23,6 +23,7 @@ namespace oro_barrett_interface {
     joint_position_cmd(4),
     joint_velocity_cmd(4),
     joint_trapezoidal_cmd(4),
+    joint_idle_cmd(4),
     center_of_mass(4),
 
     mode_torque(0x0),
@@ -160,6 +161,8 @@ namespace oro_barrett_interface {
     joint_state.position.resize(8);
     joint_state.velocity.resize(8);
     joint_state.effort.resize(8);
+
+    joint_idle_cmd.setZero();
 
     // Set up action servers
     set_mode_action_server_.addPorts(parent_service->provides("bhand_set_mode_action"), true, "~"+owner_name+"/hand/set_mode_action/");

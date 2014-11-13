@@ -400,6 +400,10 @@ namespace oro_barrett_sim {
   {
     joint_cmd.mode[joint_index] = oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL;
   }
+  void HandSimDevice::setIdleMode(unsigned int joint_index)
+  {
+    joint_cmd.mode[joint_index] = oro_barrett_msgs::BHandCmd::MODE_IDLE;
+  }
 
   bool HandSimDevice::doneMoving(const unsigned pair_index)
   {

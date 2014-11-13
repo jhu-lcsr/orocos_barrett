@@ -219,17 +219,19 @@ void BarrettHWManager::stopHook()
 void BarrettHWManager::deviceStopHook()
 {
   // Set the mode to IDLE
-  // FIXME: This doesn't work, it just leaves the thing running!!
-  // it's as if setting the mode to "IDLE" makes it so the safety module doesn't check heartbeats any more
-  // maybe instead we need to set all of the motor pucks to idle?
+  if(hand_device_) {
+    hand_device_->idle();
+  }
+  // FIXME: The following doesn't work, it just leaves the thing running!!
+  // it's as if setting the mode to "IDLE" makes it so the safety module
+  // doesn't check heartbeats any more maybe instead we need to set all of the
+  // motor pucks to idle?
   //this->setMode(barrett::SafetyModule::IDLE);
+
   // Wait for the system to become active
   if(!this->waitForMode(barrett::SafetyModule::IDLE)) {
     RTT::log(RTT::Warning) << "Could not IDLE the Barrett Hardware!" <<
       RTT::endlog();
-  }
-  if(hand_device_) {
-    hand_device_->idle();
   }
 }
 
@@ -421,7 +423,7 @@ void BarrettHWManager::deviceUpdateHook()
         safety_mode_ = (barrett::SafetyModule::SafetyMode)wam_device_->getSafetyMode();
       } catch(std::runtime_error &err) {
         RTT::log(RTT::Error) << "Could not read the WAM state: " << err.what() << RTT::endlog();
-        this->error();
+        wam_device_->estop();
       }
     }
     if(hand_device_) {
@@ -430,7 +432,7 @@ void BarrettHWManager::deviceUpdateHook()
         hand_device_->readDevice(time,period);
       } catch(std::runtime_error &err) {
         RTT::log(RTT::Error) << "Could not read the BHand state: " << err.what() << RTT::endlog();
-        this->error();
+        hand_device_->idle();
       }
     }
     read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);

@@ -30,6 +30,7 @@ namespace oro_barrett_sim {
     virtual void setPositionMode(unsigned int joint_index);
     virtual void setVelocityMode(unsigned int joint_index);
     virtual void setTrapezoidalMode(unsigned int joint_index);
+    virtual void setIdleMode(unsigned int joint_index);
 
     virtual void readSim(ros::Time time, RTT::Seconds period);
     virtual void writeSim(ros::Time time, RTT::Seconds period);

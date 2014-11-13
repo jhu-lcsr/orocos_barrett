@@ -24,12 +24,15 @@ namespace oro_barrett_hw {
     virtual void idle();
     virtual void run();
 
+    virtual void setSG(int lsg, int hsg);
     virtual void setCompliance(bool enable);
+    void printState();
 
     virtual void setTorqueMode(unsigned int joint_index);
     virtual void setPositionMode(unsigned int joint_index);
     virtual void setVelocityMode(unsigned int joint_index);
     virtual void setTrapezoidalMode(unsigned int joint_index);
+    virtual void setIdleMode(unsigned int joint_index);
 
     virtual void readDevice(ros::Time time, RTT::Seconds period);
     virtual void writeDevice(ros::Time time, RTT::Seconds period);
@@ -78,7 +81,7 @@ namespace oro_barrett_hw {
       {
         using namespace barrett;
         int statuses[N_PUCKS];
-        group.getProperty(Puck::TSTOP, statuses, true);
+        group.getProperty(Puck::HSG, statuses, true);
 
         for(unsigned int i=0; i<N_PUCKS; i++) {
           RTT::log(RTT::Info) << "Puck " <<i<< " has status "<<statuses[i] << RTT::endlog();
@@ -87,11 +90,30 @@ namespace oro_barrett_hw {
         return true;
       }
 
+      //! Query some hand information
+      void printState()
+      {
+        using namespace barrett;
+        int hsg[N_PUCKS];
+        group.getProperty(Puck::HSG, hsg, true);
+        int sg[N_PUCKS];
+        group.getProperty(Puck::SG, sg, true);
+
+        //Eigen::VectorXd t(4);
+        //this->getKnuckleTorque(t);
+
+        for(unsigned int i=0; i<N_PUCKS; i++) {
+          RTT::log(RTT::Warning) << "Puck " <<i<< " has HSG "<<hsg[i] << RTT::endlog();
+          RTT::log(RTT::Warning) << "Puck " <<i<< " has SG "<<sg[i] << RTT::endlog();
+        }
+      }
+
       //! Get the torque at the distal knuckles
       void getKnuckleTorque(Eigen::VectorXd torques)
       {
         int props[N_PUCKS];
-        group.getProperty(barrett::Puck::SG, props, true);
+
+        group.getProperty<barrett::Puck::StandardParser>(barrett::Puck::SG, props, true);
         for(unsigned int i=0; i<N_PUCKS; i++) {
           torques[i] = props[i];
         }
@@ -113,9 +135,18 @@ namespace oro_barrett_hw {
       void setCompliance(bool enable)
       {
         for(unsigned i=0; i<3; i++) {
-          pucks[i]->setProperty(barrett::Puck::TSTOP, (enable) ? (50) : (0), false);
+          pucks[i]->setProperty(barrett::Puck::HSG, (enable) ? (0) : (4096), false);
+          //pucks[i]->setProperty(barrett::Puck::LSG, (enable) ? (0) : (-255), false);
         }
-        pucks[3]->setProperty(barrett::Puck::TSTOP, (enable) ? (150) : (0), false);
+        //pucks[3]->setProperty(barrett::Puck::HSG, (enable) ? (0) : (256), false);
+      }
+
+      void setSG(int lsg, int hsg)
+      {
+        for(unsigned i=0; i<3; i++) {
+          pucks[i]->setProperty(barrett::Puck::LSG, lsg, false);
+          pucks[i]->setProperty(barrett::Puck::HSG, hsg, false);
+        }
       }
 
       //! Set the command mode to torque for a subset of bitmasked hand pucks
@@ -182,7 +213,11 @@ namespace oro_barrett_hw {
 
     Eigen::Vector4d
       raw_inner_positions,
-      raw_outer_positions;
+      raw_inner_positions_temp,
+      raw_outer_positions,
+      raw_outer_positions_temp,
+      raw_inner_velocities,
+      raw_outer_velocities;
 
     std::vector<int> raw_fingertip_torques;
 
@@ -242,6 +277,15 @@ namespace oro_barrett_hw {
     joint_cmd_buffer_(1)
   {
     parent_service->provides("hand")->addProperty("temperature",temperature);
+    parent_service->provides("hand")->addOperation("printState", &HandHWDevice::printState, this, RTT::OwnThread);
+    parent_service->provides("hand")->addOperation("setSG", &HandHWDevice::setSG, this, RTT::OwnThread);
+
+    raw_inner_positions.setZero();
+    raw_inner_positions_temp.setZero();
+    raw_outer_positions.setZero();
+    raw_outer_positions_temp.setZero();
+    raw_inner_velocities.setZero();
+    raw_outer_velocities.setZero();
   }
 
   void HandHWDevice::initialize()
@@ -269,6 +313,19 @@ namespace oro_barrett_hw {
     interface->setCompliance(enable);
   }
 
+  void HandHWDevice::setSG(int lsg, int hsg)
+  {
+    interface->setSG(lsg, hsg);
+  }
+
+  void HandHWDevice::printState()
+  {
+    interface->printState();
+    for(unsigned int i=0; i<N_PUCKS; i++) {
+      RTT::log(RTT::Warning) << "Puck " <<i<< " has SG "<<raw_fingertip_torques[i] << RTT::endlog();
+    }
+  }
+
   void HandHWDevice::readDevice(ros::Time time, RTT::Seconds period)
   {
     // Limit other operations
@@ -294,9 +351,19 @@ namespace oro_barrett_hw {
       throw;
     }
 
-    // Get the state, and re-shape it
+    // Get the joint positions
+    raw_inner_positions_temp = interface->getInnerLinkPosition();
+    raw_outer_positions_temp = interface->getOuterLinkPosition();
+
+    // Compute joint velocity
+    raw_inner_velocities = (raw_inner_positions_temp-raw_inner_positions) / period;
+    raw_outer_velocities = (raw_outer_positions_temp-raw_outer_positions) / period;
+
+    // Save the joint positions
     raw_inner_positions = interface->getInnerLinkPosition();
     raw_outer_positions = interface->getOuterLinkPosition();
+
+    // Get the fingertip torques
     raw_fingertip_torques = interface->getFingertipTorque();
 
     last_read_time = time;
@@ -308,13 +375,20 @@ namespace oro_barrett_hw {
     this->computeCenterOfMass(center_of_mass);
     center_of_mass_out.write(center_of_mass);
 
-    // Get the state, and re-shape it
+    // Get the positions, and re-shape it
     joint_position(0) = raw_inner_positions(3);
     joint_position(1) = raw_inner_positions(3);
     joint_position.block<3,1>(2,0) = raw_inner_positions.block<3,1>(0,0);
     joint_position.block<3,1>(5,0) = raw_outer_positions.block<3,1>(0,0);
+    
+    // Get the velocity, and re-shape it
+    joint_velocity(0) = raw_inner_velocities(3);
+    joint_velocity(1) = raw_inner_velocities(3);
+    joint_velocity.block<3,1>(2,0) = raw_inner_velocities.block<3,1>(0,0);
+    joint_velocity.block<3,1>(5,0) = raw_outer_velocities.block<3,1>(0,0);
 
     joint_position_out.write(joint_position);
+    joint_velocity_out.write(joint_velocity);
 
     // Publish state to ROS
     if(this->joint_state_throttle.ready(0.02)) {
@@ -340,12 +414,14 @@ namespace oro_barrett_hw {
       this->center_of_mass_debug_out.write(com_msg);
 
       // Write out hand status
+      this->status_msg.run_mode.value = this->run_mode;
       for(unsigned i=0; i<barrett::Hand::DOF; i++) {
         unsigned bit = 1<<i;
         if(mode_torque & bit)       this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_TORQUE;
         if(mode_position & bit)     this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_PID;
         if(mode_trapezoidal & bit)  this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL;
         if(mode_velocity & bit)     this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_VELOCITY;
+        if(mode_idle & bit)         this->status_msg.mode[i] = oro_barrett_msgs::BHandCmd::MODE_IDLE;
         this->status_msg.temperature[i] = this->temperature(i);
       }
       this->status_out.write(this->status_msg);
@@ -434,12 +510,14 @@ namespace oro_barrett_hw {
               min_period = RUN_UPDATE_PERIOD;
               interface->close(Hand::GRASP,false);
               run_mode = RUN;
+              this->status_msg.initialized = true;
               break;
           };
           break;
         }
       case RUN:
         {
+          bool new_idle_cmd = false;
           bool new_torque_cmd = torque_cmd_buffer_.Pop(joint_torque_cmd);
           bool new_position_cmd = position_cmd_buffer_.Pop(joint_position_cmd);
           bool new_velocity_cmd = velocity_cmd_buffer_.Pop(joint_velocity_cmd);
@@ -477,6 +555,10 @@ namespace oro_barrett_hw {
                   joint_trapezoidal_cmd[i] = joint_cmd.cmd[i];
                   this->setTrapezoidalMode(i);
                   break;
+                case oro_barrett_msgs::BHandCmd::MODE_IDLE:
+                  new_idle_cmd = true;
+                  this->setIdleMode(i);
+                  break;
               };
             }
           }
@@ -485,10 +567,11 @@ namespace oro_barrett_hw {
           if(modes_changed)
           {
             RTT::log(RTT::Debug) << "Hand command modes changed." <<RTT::endlog();
-            interface->setTorqueMode      ( mode_torque & ~mode_position & ~mode_velocity & ~mode_trapezoidal);
-            interface->setPositionMode    (~mode_torque &  mode_position & ~mode_velocity & ~mode_trapezoidal);
-            interface->setVelocityMode    (~mode_torque & ~mode_position &  mode_velocity & ~mode_trapezoidal);
-            interface->setTrapezoidalMode (~mode_torque & ~mode_position & ~mode_velocity &  mode_trapezoidal);
+            interface->setTorqueMode      ( mode_torque & ~mode_position & ~mode_velocity & ~mode_trapezoidal & ~mode_idle);
+            interface->setPositionMode    (~mode_torque &  mode_position & ~mode_velocity & ~mode_trapezoidal & ~mode_idle);
+            interface->setVelocityMode    (~mode_torque & ~mode_position &  mode_velocity & ~mode_trapezoidal & ~mode_idle);
+            interface->setTrapezoidalMode (~mode_torque & ~mode_position & ~mode_velocity &  mode_trapezoidal & ~mode_idle);
+            interface->setVelocityMode    (~mode_torque & ~mode_position & ~mode_velocity & ~mode_trapezoidal &  mode_idle);
             modes_changed = false;
           }
 
@@ -514,6 +597,10 @@ namespace oro_barrett_hw {
             }
             interface->setTrapezoidalCommand(joint_trapezoidal_cmd, mode_trapezoidal);
           }
+          if(new_idle_cmd) {
+            interface->setVelocityMode(mode_idle);
+            interface->setVelocityCommand(joint_idle_cmd, mode_idle);
+          }
         }
         break;
     };
@@ -536,6 +623,7 @@ namespace oro_barrett_hw {
     mode_position &= ~joint_bit;
     mode_velocity &= ~joint_bit;
     mode_trapezoidal &= ~joint_bit;
+    mode_idle &= ~joint_bit;
 
     modes_changed = true;
   }
@@ -554,6 +642,7 @@ namespace oro_barrett_hw {
     mode_position |= joint_bit;
     mode_velocity &= ~joint_bit;
     mode_trapezoidal &= ~joint_bit;
+    mode_idle &= ~joint_bit;
 
     modes_changed = true;
   }
@@ -572,6 +661,7 @@ namespace oro_barrett_hw {
     mode_position &= ~joint_bit;
     mode_velocity |= joint_bit;
     mode_trapezoidal &= ~joint_bit;
+    mode_idle &= ~joint_bit;
 
     modes_changed = true;
   }
@@ -590,6 +680,26 @@ namespace oro_barrett_hw {
     mode_position &= ~joint_bit;
     mode_velocity &= ~joint_bit;
     mode_trapezoidal |= joint_bit;
+    mode_idle &= ~joint_bit;
+
+    modes_changed = true;
+  }
+
+  void HandHWDevice::setIdleMode(unsigned int joint_index)
+  {
+    unsigned int joint_bit = (1<<joint_index);
+
+    if(mode_idle & joint_bit) {
+      return;
+    }
+
+    RTT::log(RTT::Debug) << "Setting hand joint "<<joint_index<<" to IDLE mode." <<RTT::endlog();
+
+    mode_torque &= ~joint_bit;
+    mode_position &= ~joint_bit;
+    mode_velocity &= ~joint_bit;
+    mode_trapezoidal &= ~joint_bit;
+    mode_idle |= joint_bit;
 
     modes_changed = true;
   }

@@ -48,6 +48,8 @@ namespace oro_barrett_interface {
     virtual void setVelocityMode(unsigned int joint_index) = 0;
     //! Set joint to trapezoidal mode
     virtual void setTrapezoidalMode(unsigned int joint_index) = 0;
+    //! Set joint to idle mode
+    virtual void setIdleMode(unsigned int joint_index) = 0;
 
     //! Read the hardware state and publish it
     virtual void readDevice(ros::Time time, RTT::Seconds period) = 0;
@@ -84,8 +86,9 @@ namespace oro_barrett_interface {
     //! Hand run mode
     enum RunMode {
       IDLE = 0,
-      INITIALIZE,
-      RUN
+      RUN,
+      UNINITIALIZED,
+      INITIALIZE
     };
 
     //! Initialization state
@@ -130,6 +133,7 @@ namespace oro_barrett_interface {
       joint_position_cmd,
       joint_velocity_cmd,
       joint_trapezoidal_cmd,
+      joint_idle_cmd,
       center_of_mass;
 
     //! Mode bitmasks
@@ -137,7 +141,8 @@ namespace oro_barrett_interface {
       mode_torque,
       mode_position,
       mode_velocity,
-      mode_trapezoidal;
+      mode_trapezoidal,
+      mode_idle;
 
     //! Flag desingating any modes have changed
     bool modes_changed;
