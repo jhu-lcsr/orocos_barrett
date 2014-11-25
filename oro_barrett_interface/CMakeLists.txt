@@ -3,6 +3,7 @@ project(oro_barrett_interface)
 
 find_package(catkin REQUIRED COMPONENTS
   rtt_ros rtt_ros_tools kdl_parser)
+find_package(cmake_modules REQUIRED)
 
 find_package(Eigen REQUIRED)
 find_package(orocos_kdl REQUIRED)
