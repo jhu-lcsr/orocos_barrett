@@ -14,6 +14,7 @@ import sensor_msgs.msg
 
 from urdf_parser_py.urdf import URDF
 import oro_barrett_msgs.msg
+from oro_barrett_msgs.msg import BHandGraspAction, BHandGraspGoal, BHandReleaseAction, BHandReleaseGoal, BHandSpreadGoal, BHandSpreadAction
 
 class BarrettDashboard(Plugin):
 
@@ -193,13 +194,20 @@ class BarrettDashboard(Plugin):
         self.bhand_set_mode_client = actionlib.SimpleActionClient(
                 'hand/set_mode_action',
                 oro_barrett_msgs.msg.BHandSetModeAction)
+        self.grasp_client = actionlib.SimpleActionClient(
+                'grasp', BHandGraspAction)
+        self.release_client = actionlib.SimpleActionClient(
+                'release', BHandReleaseAction)
+        self.spread_client = actionlib.SimpleActionClient(
+                'spread', BHandSpreadAction)
 
         self._widget.button_initialize_hand.clicked[bool].connect(self._handle_initialize_hand_clicked)
         self._widget.button_idle_hand.clicked[bool].connect(self._handle_idle_hand_clicked)
         self._widget.button_run_hand.clicked[bool].connect(self._handle_run_hand_clicked)
 
-        self._widget.button_open_hand.clicked[bool].connect(self._handle_open_hand_clicked)
-        self._widget.button_close_hand.clicked[bool].connect(self._handle_close_hand_clicked)
+        self._widget.button_release_hand.clicked[bool].connect(self._handle_release_hand_clicked)
+        self._widget.button_grasp_hand.clicked[bool].connect(self._handle_grasp_hand_clicked)
+        self._widget.button_set_spread.clicked[bool].connect(self._handle_spread_hand_clicked)
 
         self._widget.resizeEvent = self._handle_resize
 
@@ -377,9 +385,29 @@ class BarrettDashboard(Plugin):
             goal.run_mode.value = oro_barrett_msgs.msg.RunMode.IDLE
             self.bhand_set_mode_client.send_goal(goal)
 
-    def _handle_open_hand_clicked(self, checked):
-        pass
+    def _get_grasp_mask(self):
+        return [ self._widget.button_use_f1.isChecked(),
+                self._widget.button_use_f2.isChecked(),
+                self._widget.button_use_f3.isChecked()]
 
-    def _handle_close_hand_clicked(self, checked):
-        pass
+    def _handle_release_hand_clicked(self, checked):
+        goal = BHandReleaseGoal()
+        goal.release_mask = self._get_grasp_mask()
+        goal.release_speed = [3.0, 3.0, 3.0]
+
+        self.release_client.send_goal(goal)
+
+    def _handle_grasp_hand_clicked(self, checked):
+        goal = BHandGraspGoal()
+        goal.grasp_mask = self._get_grasp_mask()
+        goal.grasp_speed = [1.0, 1.0, 1.0]
+        goal.grasp_effort = [1.0, 1.0, 1.0]
+        goal.min_fingertip_radius = 0.0
+
+        self.grasp_client.send_goal(goal)
         
+    def _handle_spread_hand_clicked(self, checked):
+        goal = BHandSpreadGoal()
+        goal.spread_position = self._widget.spread_slider.value()/1000.0*3.141
+
+        self.spread_client.send_goal(goal)

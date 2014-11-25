@@ -18,7 +18,7 @@ The package [**oro\_barrett\_interface**](oro_barrett_interface) includes an
 Orocos component which is represents the set of devices that can be represented
 by a single libbarrett `barrett::ProductManager` and is used in
 [**oro\_barrett\_hw**](oro_barrett_hw) and
-[**oro\_barrett\_gazebo**](oro_barrett_gazebo) for talking to the real hardware
+[**oro\_barrett\_sim**](oro_barrett_sim) for talking to the real hardware
 and simulated hardware, respectively. See each package for more information
 about its contents.
 
