@@ -48,7 +48,7 @@ namespace oro_barrett_sim {
     fingertip_torque(4),
     breakaway_angle(4),
     joint_torque(8),
-    joint_torque_max(8,1.5),
+    joint_torque_max(Eigen::VectorXd::Constant(8, 1.5)),
     joint_torque_breakaway(4),
     p_gain(25.0),
     d_gain(1.0),
