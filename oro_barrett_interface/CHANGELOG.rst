@@ -2,8 +2,8 @@
 Changelog for package oro_barrett_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2014-12-08)
+------------------
 * moved catkin_modules dependency to catkin COMPONENTS list
 * Attempting indigo build.  Fixed eigen dependency by adding cmake_modules to the dependencies. Build fails at oro_barrett_sim due to a separate Eigen error.
 * rqt: add high-level hand commands to rqt dashboard

@@ -2,8 +2,8 @@
 Changelog for package oro_barrett_sim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2014-12-08)
+------------------
 * sim: fixing bad initialization of max torques
 * hw: Numerous updatest to hand control
 * improved torqueswitch behavior and improved high-level bhand actions

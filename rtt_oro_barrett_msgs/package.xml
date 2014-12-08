@@ -1,6 +1,6 @@
 <package>
   <name>rtt_oro_barrett_msgs</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>
 
     Provides an rtt typekit for ROS oro_barrett_msgs messages.

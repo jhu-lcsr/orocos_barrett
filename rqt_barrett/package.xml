@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>rqt_barrett</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>
     This is a smple rqt-based GUI for displaying and controlling the state of
     a Barrett WAM and BHand.

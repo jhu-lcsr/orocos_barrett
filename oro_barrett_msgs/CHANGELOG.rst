@@ -2,8 +2,8 @@
 Changelog for package oro_barrett_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2014-12-08)
+------------------
 * adding new hand actions
 * adding new hand actions
 * updating bhand status and bhand message imports in scripts
