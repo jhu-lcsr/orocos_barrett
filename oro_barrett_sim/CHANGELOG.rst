@@ -2,6 +2,9 @@
 Changelog for package oro_barrett_sim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2014-12-08)
 ------------------
 * sim: fixing bad initialization of max torques

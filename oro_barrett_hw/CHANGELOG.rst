@@ -2,6 +2,9 @@
 Changelog for package oro_barrett_hw
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2014-12-08)
 ------------------
 * hw: Numerous updatest to hand control

@@ -2,6 +2,9 @@
 Changelog for package rqt_barrett
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2014-12-08)
 ------------------
 * rqt: add high-level hand commands to rqt dashboard

@@ -2,6 +2,11 @@
 Changelog for package oro_barrett_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixing setup.py version issue
+* Contributors: Jonathan Bohren
+
 0.1.0 (2014-12-08)
 ------------------
 * moved catkin_modules dependency to catkin COMPONENTS list
