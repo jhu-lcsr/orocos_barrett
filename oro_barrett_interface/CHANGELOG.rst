@@ -2,8 +2,8 @@
 Changelog for package oro_barrett_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2014-12-09)
+------------------
 * Fixing setup.py version issue
 * Contributors: Jonathan Bohren
 
