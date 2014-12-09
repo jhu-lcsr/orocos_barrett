@@ -1,9 +1,10 @@
 from distutils.core import setup
+from catkin_pkg.python_setup import generate_distutils_setup
 
-setup(
-    version='0.0.0',
-    scripts=['scripts/bhand_action_server.py'],
-    packages=['oro_barrett_interface'],
-    package_dir={'': 'src'}
+d = generate_distutils_setup(
+        packages=['oro_barrett_interface'],
+        package_dir={'': 'src'}
 )
+
+setup(**d)
 
