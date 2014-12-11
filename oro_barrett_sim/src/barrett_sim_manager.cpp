@@ -62,7 +62,7 @@ void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model)
     return;
   }
 
-  RTT::log(RTT::Debug) << ">>> BarrettSimManager::gazeboUpdateHook begin" << RTT::endlog();
+  //RTT::log(RTT::Debug) << ">>> BarrettSimManager::gazeboUpdateHook begin" << RTT::endlog();
 
   ros::Time wall_time = rtt_rosclock::host_wall_now();
   if(wam_device_) {
@@ -81,7 +81,7 @@ void BarrettSimManager::gazeboUpdateHook(gazebo::physics::ModelPtr model)
   gz_duration_ = gz_wam_duration_ + gz_hand_duration_;
 
   last_gz_update_time_ = gz_time;
-  RTT::log(RTT::Debug) << "<<< BarrettSimManager::gazeboUpdateHook end" << RTT::endlog();
+  //RTT::log(RTT::Debug) << "<<< BarrettSimManager::gazeboUpdateHook end" << RTT::endlog();
 }
 
 bool BarrettSimManager::configureHook()
@@ -180,7 +180,7 @@ void BarrettSimManager::updateHook()
   RTT::Seconds period = (time - last_update_time_).toSec();
   period_ = period;
 
-  RTT::log(RTT::Debug) << ">>> BarrettSimManager::updateHook begin" << RTT::endlog();
+  //RTT::log(RTT::Debug) << ">>> BarrettSimManager::updateHook begin" << RTT::endlog();
 
   // Read
   RTT::os::TimeService::ticks read_start = RTT::os::TimeService::Instance()->getTicks();
@@ -227,7 +227,7 @@ void BarrettSimManager::updateHook()
   write_duration_ = RTT::os::TimeService::Instance()->secondsSince(write_start);
 
   last_update_time_ = time;
-  RTT::log(RTT::Debug) << "<<< BarrettSimManager::updateHook end" << RTT::endlog();
+  //RTT::log(RTT::Debug) << "<<< BarrettSimManager::updateHook end" << RTT::endlog();
 }
 
 void BarrettSimManager::stopHook()
