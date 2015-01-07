@@ -66,7 +66,11 @@ namespace oro_barrett_sim {
       breakaway_angle,
       joint_torque,
       joint_torque_max,
-      joint_torque_breakaway;
+      joint_torque_breakaway,
+      joint_velocity_cmd_start_positions;
+
+    std::vector<ros::Time>
+      joint_velocity_cmd_start_times;
 
     std::vector<KDL::VelocityProfile_Trap> trap_generators;
     std::vector<ros::Time> trap_start_times;

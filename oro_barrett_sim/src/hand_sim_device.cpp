@@ -50,6 +50,8 @@ namespace oro_barrett_sim {
     joint_torque(8),
     joint_torque_max(Eigen::VectorXd::Constant(8, 1.5)),
     joint_torque_breakaway(4),
+    joint_velocity_cmd_start_positions(4),
+    joint_velocity_cmd_start_times(4),
     p_gain(25.0),
     d_gain(1.0),
     velocity_gain(0.1),
@@ -123,8 +125,8 @@ namespace oro_barrett_sim {
       fingerToJointIDs(i, mid, did);
 
       double cmd = joint_cmd.cmd[i];
-      double pos = joint_position[mid] + (i==3 ? 0 : joint_position[did]);
-      double vel = joint_velocity[mid] + (i==3 ? 0 : joint_velocity[did]);
+      double pos = joint_position[mid];// + (i==3 ? 0 : joint_position[did]);
+      double vel = joint_velocity[mid];// + (i==3 ? 0 : joint_velocity[did]);
 
       // Switch the control law based on the command mode
       switch(joint_cmd.mode[i])
@@ -136,20 +138,19 @@ namespace oro_barrett_sim {
           }
         case oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL:
           {
-            const RTT::Seconds sample_secs = (rtt_rosclock::rtt_now() - trap_start_times[i]).toSec();
+            const RTT::Seconds sample_secs = (time - trap_start_times[i]).toSec();
             joint_torque =
               p_gain * (trap_generators[i].Pos(sample_secs) - pos) +
               d_gain * (trap_generators[i].Vel(sample_secs) - vel);
             break;
           }
+        case oro_barrett_msgs::BHandCmd::MODE_VELOCITY:
+          {
+            cmd = joint_velocity_cmd_start_positions[i] + cmd * (time - joint_velocity_cmd_start_times[i]).toSec();
+          }
         case oro_barrett_msgs::BHandCmd::MODE_PID:
           {
             joint_torque = p_gain * (cmd - pos) - d_gain * vel;
-            break;
-          }
-        case oro_barrett_msgs::BHandCmd::MODE_VELOCITY:
-          {
-            joint_torque = velocity_gain * (cmd - vel);
             break;
           }
         case oro_barrett_msgs::BHandCmd::MODE_TORQUE:
@@ -362,17 +363,19 @@ namespace oro_barrett_sim {
             }
 
             // Update the command
+            unsigned medial_id = 0, distal_id = 0;
+            fingerToJointIDs(i, medial_id, distal_id);
             if(new_torque_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_TORQUE) {
               joint_cmd.cmd[i] = joint_torque_cmd[i];
             } else if(new_position_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_PID) {
               joint_cmd.cmd[i] = joint_position_cmd[i];
             } else if(new_velocity_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_VELOCITY) {
               joint_cmd.cmd[i] = joint_velocity_cmd[i];
+              joint_velocity_cmd_start_times[i] = rtt_rosclock::rtt_now();
+              joint_velocity_cmd_start_positions[i] = joint_position[medial_id];
             } else if(new_trapezoidal_cmd && joint_cmd.mode[i] == oro_barrett_msgs::BHandCmd::MODE_TRAPEZOIDAL) {
               joint_cmd.cmd[i] = joint_trapezoidal_cmd[i];
               // Generate trapezoidal profile generators
-              unsigned medial_id = 0, distal_id = 0;
-              fingerToJointIDs(i, medial_id, distal_id);
               trap_generators[i].SetProfile(joint_position[medial_id], joint_cmd.cmd[i]);
               trap_start_times[i] = rtt_rosclock::rtt_now();
             }
