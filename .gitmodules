@@ -5,5 +5,5 @@
 	path = utilities
 	url = ../orocos_barrett_utils
 [submodule "msgs"]
-	path = msgs
+	path = communication/oro_barrett_msgs
 	url = ../orocos_barrett_msgs
