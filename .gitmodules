@@ -1,0 +1,9 @@
+[submodule "components"]
+	path = components
+	url = ../orocos_barrett_components
+[submodule "utilities"]
+	path = utilities
+	url = ../orocos_barrett_utils
+[submodule "msgs"]
+	path = msgs
+	url = ../orocos_barrett_msgs
