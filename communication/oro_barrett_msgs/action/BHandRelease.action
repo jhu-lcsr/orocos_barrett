@@ -1,0 +1,20 @@
+Header header
+
+# The desired fingers for the grasp
+# True: move finger to position and aply given effort
+# False: leave finger at current position and don't apply effort
+bool[3] release_mask
+# The desired release speed (rad/s in the medial joint)
+float64[3] release_speed
+
+# Release stop conditions (from below)
+int8[3] stop_mode
+# Stop the given fingers when they form a convex opening
+int8 STOP_AT_POSITION=0
+int8 STOP_WHEN_CONVEX=1
+int8 STOP_AT_RADIUS=2
+
+# Release stop position (for joints using STOP_AT_POSITION)
+float64[3] stop_angle
+---
+---
