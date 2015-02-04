@@ -1,6 +1,0 @@
-bool override_defaults
-float64[] hone_position
-float64[] encoder_offsets
----
----
-float64[] correction
